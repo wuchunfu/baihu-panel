@@ -2,7 +2,8 @@ version: '3.8'
 
 services:
   baihu:
-    build: .
+    image: ghcr.io/engigu/baihu:main
+    container_name: baihu
     ports:
       - "8052:8052"
     volumes:
