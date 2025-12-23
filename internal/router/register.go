@@ -28,17 +28,17 @@ func RegisterControllers() *Controllers {
 
 	// Initialize and return controllers
 	return &Controllers{
-		Task:      controllers.NewTaskController(taskService, cronService),
-		Auth:      controllers.NewAuthController(userService, settingsService, loginLogService),
-		Env:       controllers.NewEnvController(envService),
-		Script:    controllers.NewScriptController(scriptService),
-		Executor:  controllers.NewExecutorController(executorService),
-		File:      controllers.NewFileController(constant.ScriptsWorkDir),
-		Dashboard: controllers.NewDashboardController(cronService, executorService),
-		Log:       controllers.NewLogController(),
-		Terminal:  controllers.NewTerminalController(),
-		Settings:  controllers.NewSettingsController(userService, loginLogService, executorService),
-		Runtime:   controllers.NewRuntimeController(),
+		Task:       controllers.NewTaskController(taskService, cronService),
+		Auth:       controllers.NewAuthController(userService, settingsService, loginLogService),
+		Env:        controllers.NewEnvController(envService),
+		Script:     controllers.NewScriptController(scriptService),
+		Executor:   controllers.NewExecutorController(executorService),
+		File:       controllers.NewFileController(constant.ScriptsWorkDir),
+		Dashboard:  controllers.NewDashboardController(cronService, executorService),
+		Log:        controllers.NewLogController(),
+		Terminal:   controllers.NewTerminalController(),
+		Settings:   controllers.NewSettingsController(userService, loginLogService, executorService),
+		Dependency: controllers.NewDependencyController(),
 	}
 }
 

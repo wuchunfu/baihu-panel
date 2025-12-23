@@ -12,17 +12,17 @@ import (
 )
 
 type Controllers struct {
-	Task      *controllers.TaskController
-	Auth      *controllers.AuthController
-	Env       *controllers.EnvController
-	Script    *controllers.ScriptController
-	Executor  *controllers.ExecutorController
-	File      *controllers.FileController
-	Dashboard *controllers.DashboardController
-	Log       *controllers.LogController
-	Terminal  *controllers.TerminalController
-	Settings  *controllers.SettingsController
-	Runtime   *controllers.RuntimeController
+	Task       *controllers.TaskController
+	Auth       *controllers.AuthController
+	Env        *controllers.EnvController
+	Script     *controllers.ScriptController
+	Executor   *controllers.ExecutorController
+	File       *controllers.FileController
+	Dashboard  *controllers.DashboardController
+	Log        *controllers.LogController
+	Terminal   *controllers.TerminalController
+	Settings   *controllers.SettingsController
+	Dependency *controllers.DependencyController
 }
 
 func mustSubFS(fsys fs.FS, dir string) fs.FS {
@@ -185,16 +185,15 @@ func Setup(c *Controllers) *gin.Engine {
 				settings.POST("/restore", c.Settings.RestoreBackup)
 			}
 
-			// Runtime routes (依赖管理)
-			runtime := authorized.Group("/runtime")
+			// Dependency routes (依赖管理)
+			deps := authorized.Group("/deps")
 			{
-				runtime.GET("", c.Runtime.GetAvailableRuntimes)
-				runtime.GET("/envs", c.Runtime.ListEnvs)
-				runtime.POST("/envs", c.Runtime.CreateEnv)
-				runtime.DELETE("/envs", c.Runtime.DeleteEnv)
-				runtime.GET("/packages", c.Runtime.ListPackages)
-				runtime.POST("/packages", c.Runtime.InstallPackage)
-				runtime.DELETE("/packages", c.Runtime.UninstallPackage)
+				deps.GET("", c.Dependency.List)
+				deps.POST("", c.Dependency.Create)
+				deps.DELETE("/:id", c.Dependency.Delete)
+				deps.POST("/install", c.Dependency.Install)
+				deps.POST("/uninstall/:id", c.Dependency.Uninstall)
+				deps.GET("/installed", c.Dependency.GetInstalled)
 			}
 		}
 	}

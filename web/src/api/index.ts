@@ -192,19 +192,18 @@ export const api = {
       if (json.code !== 200) throw new Error(json.msg || '上传失败')
     }
   },
-  runtime: {
-    getAvailable: () => request<string[]>('/runtime'),
-    listEnvs: (type: string) => request<RuntimeEnv[]>(`/runtime/envs?type=${type}`),
-    createEnv: (type: string, name: string, version?: string) =>
-      request(`/runtime/envs?type=${type}`, { method: 'POST', body: JSON.stringify({ name, version }) }),
-    deleteEnv: (type: string, name: string) =>
-      request(`/runtime/envs?type=${type}&name=${encodeURIComponent(name)}`, { method: 'DELETE' }),
-    listPackages: (type: string, envName: string) =>
-      request<RuntimePackage[]>(`/runtime/packages?type=${type}&env=${encodeURIComponent(envName)}`),
-    installPackage: (type: string, envName: string, packageName: string) =>
-      request(`/runtime/packages?type=${type}&env=${encodeURIComponent(envName)}`, { method: 'POST', body: JSON.stringify({ package: packageName }) }),
-    uninstallPackage: (type: string, envName: string, packageName: string) =>
-      request(`/runtime/packages?type=${type}&env=${encodeURIComponent(envName)}`, { method: 'DELETE', body: JSON.stringify({ package: packageName }) })
+  deps: {
+    list: (type?: string) => {
+      const query = type ? `?type=${type}` : ''
+      return request<Dependency[]>(`/deps${query}`)
+    },
+    create: (data: { name: string; version?: string; type: string; remark?: string }) =>
+      request<Dependency>('/deps', { method: 'POST', body: JSON.stringify(data) }),
+    delete: (id: number) => request(`/deps/${id}`, { method: 'DELETE' }),
+    install: (data: { name: string; version?: string; type: string }) =>
+      request('/deps/install', { method: 'POST', body: JSON.stringify(data) }),
+    uninstall: (id: number) => request(`/deps/uninstall/${id}`, { method: 'POST' }),
+    getInstalled: (type: string) => request<Dependency[]>(`/deps/installed?type=${type}`)
   }
 }
 
@@ -347,15 +346,12 @@ export interface TaskStatsItem {
   count: number
 }
 
-export interface RuntimeEnv {
-  name: string
-  path: string
-  version: string
-  active: boolean
-}
-
-export interface RuntimePackage {
+export interface Dependency {
+  id: number
   name: string
   version: string
-  channel?: string
+  type: string
+  remark: string
+  created_at: string
+  updated_at: string
 }
