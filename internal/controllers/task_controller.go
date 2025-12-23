@@ -1,8 +1,10 @@
 package controllers
 
 import (
+	"path/filepath"
 	"strconv"
 
+	"baihu/internal/constant"
 	"baihu/internal/services"
 	"baihu/internal/utils"
 
@@ -19,6 +21,29 @@ func NewTaskController(taskService *services.TaskService, cronService *services.
 		taskService: taskService,
 		cronService: cronService,
 	}
+}
+
+// resolveWorkDir 将相对路径转换为绝对路径
+func resolveWorkDir(workDir string) string {
+	if workDir == "" {
+		// 空则使用默认 scripts 目录
+		absPath, err := filepath.Abs(constant.ScriptsWorkDir)
+		if err != nil {
+			return constant.ScriptsWorkDir
+		}
+		return absPath
+	}
+	// 如果已经是绝对路径，直接返回
+	if filepath.IsAbs(workDir) {
+		return workDir
+	}
+	// 相对路径，基于 scripts 目录
+	fullPath := filepath.Join(constant.ScriptsWorkDir, workDir)
+	absPath, err := filepath.Abs(fullPath)
+	if err != nil {
+		return fullPath
+	}
+	return absPath
 }
 
 func (tc *TaskController) CreateTask(c *gin.Context) {
@@ -42,7 +67,10 @@ func (tc *TaskController) CreateTask(c *gin.Context) {
 		return
 	}
 
-	task := tc.taskService.CreateTask(req.Name, req.Command, req.Schedule, req.Timeout, req.WorkDir, req.CleanConfig, req.Envs)
+	// 转换为绝对路径
+	workDir := resolveWorkDir(req.WorkDir)
+
+	task := tc.taskService.CreateTask(req.Name, req.Command, req.Schedule, req.Timeout, workDir, req.CleanConfig, req.Envs)
 	tc.cronService.AddTask(task)
 
 	utils.Success(c, task)
@@ -102,7 +130,7 @@ func (tc *TaskController) UpdateTask(c *gin.Context) {
 		}
 	}
 
-	task := tc.taskService.UpdateTask(id, req.Name, req.Command, req.Schedule, req.Timeout, req.WorkDir, req.CleanConfig, req.Envs, req.Enabled)
+	task := tc.taskService.UpdateTask(id, req.Name, req.Command, req.Schedule, req.Timeout, resolveWorkDir(req.WorkDir), req.CleanConfig, req.Envs, req.Enabled)
 	if task == nil {
 		utils.NotFound(c, "任务不存在")
 		return

@@ -78,13 +78,36 @@ function selectRoot() {
   open.value = false
 }
 
+// 检查是否选中（支持绝对路径匹配）
+function isSelected(dirPath: string): boolean {
+  if (!props.modelValue) return false
+  // 直接匹配相对路径
+  if (props.modelValue === dirPath) return true
+  // 绝对路径以相对路径结尾
+  if (props.modelValue.endsWith('/' + dirPath)) return true
+  return false
+}
+
+// 检查是否是默认目录
+function isDefaultSelected(): boolean {
+  if (!props.modelValue) return true
+  // 绝对路径以 /scripts 结尾且没有子目录
+  if (props.modelValue.endsWith('/scripts') || props.modelValue.endsWith('/data/scripts')) return true
+  return false
+}
+
 watch(open, (val) => {
   if (val) loadTree()
 })
 
 const displayValue = computed(() => {
   if (!props.modelValue) return props.placeholder || 'scripts (默认)'
-  return props.modelValue
+  // 如果是绝对路径，只显示最后部分
+  const parts = props.modelValue.split('/')
+  const lastPart = parts[parts.length - 1]
+  // 如果是 scripts 目录本身
+  if (lastPart === 'scripts') return 'scripts (默认)'
+  return lastPart || props.modelValue
 })
 </script>
 
@@ -103,7 +126,7 @@ const displayValue = computed(() => {
         <div
           :class="[
             'flex items-center gap-1.5 py-1 px-2 rounded cursor-pointer text-sm',
-            !modelValue ? 'bg-primary/10 text-primary' : 'hover:bg-muted'
+            isDefaultSelected() ? 'bg-primary/10 text-primary' : 'hover:bg-muted'
           ]"
           @click="selectRoot"
         >
@@ -117,7 +140,7 @@ const displayValue = computed(() => {
           :key="dir.path"
           :class="[
             'flex items-center gap-1 py-1 px-2 rounded cursor-pointer text-sm',
-            modelValue === dir.path ? 'bg-primary/10 text-primary' : 'hover:bg-muted'
+            isSelected(dir.path) ? 'bg-primary/10 text-primary' : 'hover:bg-muted'
           ]"
           :style="{ paddingLeft: (dir.depth * 12 + 8) + 'px' }"
           @click="selectDir(dir.path)"
