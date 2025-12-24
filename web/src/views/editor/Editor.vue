@@ -280,9 +280,9 @@ onMounted(initFromUrl)
 </script>
 
 <template>
-  <div class="flex h-[calc(100vh-100px)] gap-2">
+  <div class="flex flex-col lg:flex-row h-[calc(100vh-100px)] gap-2">
     <!-- 文件树 -->
-    <div class="w-56 flex-shrink-0 border rounded-md flex flex-col">
+    <div class="w-full lg:w-56 h-48 lg:h-auto flex-shrink-0 border rounded-md flex flex-col">
       <div class="flex items-center justify-between p-2 border-b">
         <span class="text-xs font-medium">脚本文件</span>
         <div class="flex gap-1">
@@ -321,26 +321,26 @@ onMounted(initFromUrl)
     </div>
 
     <!-- 编辑器 -->
-    <div class="flex-1 border rounded-md flex flex-col overflow-hidden">
-      <div class="flex items-center justify-between p-2 border-b">
-        <span class="text-xs font-medium truncate">
+    <div class="flex-1 min-h-[300px] border rounded-md flex flex-col overflow-hidden">
+      <div class="flex items-center justify-between p-2 border-b gap-2">
+        <span class="text-xs font-medium truncate flex-1 min-w-0">
           {{ selectedFile || '选择文件进行编辑' }}
           <span v-if="hasChanges" class="text-orange-500 ml-1">●</span>
         </span>
-        <div v-if="selectedFile" class="flex gap-1">
-          <Button v-if="!isEditMode" variant="ghost" size="sm" class="h-6 text-xs gap-1" @click="isEditMode = true">
-            <Pencil class="h-3 w-3" /> 编辑
+        <div v-if="selectedFile" class="flex gap-1 shrink-0">
+          <Button v-if="!isEditMode" variant="ghost" size="sm" class="h-6 text-xs gap-1 px-2" @click="isEditMode = true">
+            <Pencil class="h-3 w-3" /> <span class="hidden sm:inline">编辑</span>
           </Button>
           <template v-else>
-            <Button variant="ghost" size="sm" class="h-6 text-xs gap-1" @click="isEditMode = false; fileContent = originalContent">
-              <Eye class="h-3 w-3" /> 查看
+            <Button variant="ghost" size="sm" class="h-6 text-xs gap-1 px-2" @click="isEditMode = false; fileContent = originalContent">
+              <Eye class="h-3 w-3" /> <span class="hidden sm:inline">查看</span>
             </Button>
-            <Button variant="ghost" size="sm" class="h-6 text-xs gap-1" :disabled="!hasChanges" @click="saveFile">
-              <Save class="h-3 w-3" /> 保存
+            <Button variant="ghost" size="sm" class="h-6 text-xs gap-1 px-2" :disabled="!hasChanges" @click="saveFile">
+              <Save class="h-3 w-3" /> <span class="hidden sm:inline">保存</span>
             </Button>
           </template>
-          <Button variant="ghost" size="sm" class="h-6 text-xs gap-1" @click="runScript">
-            <Play class="h-3 w-3" /> 运行
+          <Button variant="ghost" size="sm" class="h-6 text-xs gap-1 px-2" @click="runScript">
+            <Play class="h-3 w-3" /> <span class="hidden sm:inline">运行</span>
           </Button>
         </div>
       </div>

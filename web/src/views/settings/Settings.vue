@@ -19,12 +19,12 @@ const activeTab = ref('password')
     </div>
 
     <Tabs v-model="activeTab" class="w-full">
-      <TabsList class="flex-wrap h-auto gap-1">
-        <TabsTrigger value="password" class="text-xs sm:text-sm">密码修改</TabsTrigger>
-        <TabsTrigger value="site" class="text-xs sm:text-sm">站点设置</TabsTrigger>
-        <TabsTrigger value="scheduler" class="text-xs sm:text-sm">调度设置</TabsTrigger>
-        <TabsTrigger value="backup" class="text-xs sm:text-sm">备份恢复</TabsTrigger>
-        <TabsTrigger value="about" class="text-xs sm:text-sm">关于</TabsTrigger>
+      <TabsList class="w-full sm:w-auto grid grid-cols-5 sm:inline-flex h-auto gap-1 p-1">
+        <TabsTrigger value="password" class="text-xs px-2 sm:px-3 py-1.5">密码修改</TabsTrigger>
+        <TabsTrigger value="site" class="text-xs px-2 sm:px-3 py-1.5">站点设置</TabsTrigger>
+        <TabsTrigger value="scheduler" class="text-xs px-2 sm:px-3 py-1.5">调度设置</TabsTrigger>
+        <TabsTrigger value="backup" class="text-xs px-2 sm:px-3 py-1.5">备份恢复</TabsTrigger>
+        <TabsTrigger value="about" class="text-xs px-2 sm:px-3 py-1.5">关于</TabsTrigger>
       </TabsList>
 
       <TabsContent value="password" class="mt-6">
