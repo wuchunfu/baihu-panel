@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Trash2, Package, Search, RefreshCw, Loader2, Download, FileText } from 'lucide-vue-next'
+import { Trash2, Package, Search, RefreshCw, Loader2, Download, FileText, RotateCw } from 'lucide-vue-next'
 import { api, type Dependency } from '@/api'
 import { toast } from 'vue-sonner'
 
@@ -15,6 +15,8 @@ const activeTab = ref('py')
 const deps = ref<Dependency[]>([])
 const loading = ref(false)
 const installing = ref(false)
+const reinstalling = ref<number | null>(null)
+const reinstallingAll = ref(false)
 
 // 安装对话框
 const showInstallDialog = ref(false)
@@ -107,6 +109,32 @@ function showLog(dep: Dependency) {
   showLogDialog.value = true
 }
 
+async function reinstallPackage(dep: Dependency) {
+  reinstalling.value = dep.id
+  try {
+    await api.deps.reinstall(dep.id)
+    toast.success(`${dep.name} 重新安装成功`)
+    await loadDeps()
+  } catch (e: unknown) {
+    toast.error((e as Error).message || '重新安装失败')
+  } finally {
+    reinstalling.value = null
+  }
+}
+
+async function reinstallAll() {
+  reinstallingAll.value = true
+  try {
+    await api.deps.reinstallAll(activeTab.value)
+    toast.success('全部重新安装成功')
+    await loadDeps()
+  } catch (e: unknown) {
+    toast.error((e as Error).message || '重新安装失败')
+  } finally {
+    reinstallingAll.value = false
+  }
+}
+
 function getTypeLabel(type: string) {
   return type === 'py' ? 'Python' : 'Node.js'
 }
@@ -144,6 +172,9 @@ onMounted(loadDeps)
               <Button variant="outline" size="icon" class="h-9 w-9 shrink-0" @click="loadDeps" :disabled="loading">
                 <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': loading }" />
               </Button>
+              <Button variant="outline" size="sm" class="h-9 shrink-0" @click="reinstallAll" :disabled="reinstallingAll || filteredDeps.length === 0">
+                <RotateCw class="h-4 w-4 sm:mr-1.5" :class="{ 'animate-spin': reinstallingAll }" /> <span class="hidden sm:inline">全部重装</span>
+              </Button>
               <Button size="sm" class="h-9 shrink-0" @click="openInstallDialog">
                 <Download class="h-4 w-4 sm:mr-1.5" /> <span class="hidden sm:inline">安装</span>
               </Button>
@@ -155,7 +186,7 @@ onMounted(loadDeps)
             <span class="flex-1">包名</span>
             <span class="w-32">版本</span>
             <span class="w-48 hidden md:block">备注</span>
-            <span class="w-20 text-center">操作</span>
+            <span class="w-24 text-center">操作</span>
           </div>
 
           <!-- 列表 -->
@@ -177,9 +208,12 @@ onMounted(loadDeps)
               <span class="flex-1 font-mono text-sm">{{ dep.name }}</span>
               <span class="w-32 text-sm text-muted-foreground">{{ dep.version || '-' }}</span>
               <span class="w-48 text-sm text-muted-foreground truncate hidden md:block" :title="dep.remark">{{ dep.remark || '-' }}</span>
-              <span class="w-20 flex justify-center gap-1">
+              <span class="w-24 flex justify-center gap-1">
                 <Button v-if="dep.log" variant="ghost" size="icon" class="h-7 w-7" @click="showLog(dep)">
                   <FileText class="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" class="h-7 w-7" @click="reinstallPackage(dep)" :disabled="reinstalling === dep.id">
+                  <RotateCw class="h-4 w-4" :class="{ 'animate-spin': reinstalling === dep.id }" />
                 </Button>
                 <Button variant="ghost" size="icon" class="h-7 w-7 text-destructive" @click="confirmDelete(dep)">
                   <Trash2 class="h-4 w-4" />

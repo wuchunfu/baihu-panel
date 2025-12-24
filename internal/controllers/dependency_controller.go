@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"strconv"
+	"strings"
 
 	"baihu/internal/models"
 	"baihu/internal/services"
@@ -145,6 +146,66 @@ func (c *DependencyController) Uninstall(ctx *gin.Context) {
 	c.service.Delete(id)
 
 	utils.SuccessMsg(ctx, "卸载成功")
+}
+
+// Reinstall 重新安装依赖
+func (c *DependencyController) Reinstall(ctx *gin.Context) {
+	id, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		utils.BadRequest(ctx, "无效的 ID")
+		return
+	}
+
+	// 获取依赖信息
+	deps, _ := c.service.List("")
+	var dep *models.Dependency
+	for _, d := range deps {
+		if d.ID == id {
+			dep = &d
+			break
+		}
+	}
+
+	if dep == nil {
+		utils.NotFound(ctx, "依赖不存在")
+		return
+	}
+
+	if err := c.service.Install(dep); err != nil {
+		utils.ServerError(ctx, err.Error())
+		return
+	}
+
+	utils.SuccessMsg(ctx, "重新安装成功")
+}
+
+// ReinstallAll 重新安装所有依赖
+func (c *DependencyController) ReinstallAll(ctx *gin.Context) {
+	depType := ctx.Query("type")
+	if depType == "" {
+		utils.BadRequest(ctx, "缺少 type 参数")
+		return
+	}
+
+	deps, err := c.service.List(depType)
+	if err != nil {
+		utils.ServerError(ctx, "获取依赖列表失败")
+		return
+	}
+
+	var failed []string
+	for _, d := range deps {
+		if err := c.service.Install(&d); err != nil {
+			failed = append(failed, d.Name)
+		}
+	}
+
+	if len(failed) > 0 {
+		utils.ServerError(ctx, "部分包安装失败: "+strings.Join(failed, ", "))
+		return
+	}
+
+	utils.SuccessMsg(ctx, "全部重新安装成功")
 }
 
 // GetInstalled 获取已安装的包

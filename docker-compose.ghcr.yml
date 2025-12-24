@@ -1,8 +1,8 @@
-version: '3.8'
+
 
 services:
   baihu:
-    image: ghcr.io/engigu/baihu:main
+    image: ghcr.io/engigu/baihu:latest
     container_name: baihu
     ports:
       - "8052:8052"

@@ -203,6 +203,8 @@ export const api = {
     install: (data: { name: string; version?: string; type: string; remark?: string }) =>
       request('/deps/install', { method: 'POST', body: JSON.stringify(data) }),
     uninstall: (id: number) => request(`/deps/uninstall/${id}`, { method: 'POST' }),
+    reinstall: (id: number) => request(`/deps/reinstall/${id}`, { method: 'POST' }),
+    reinstallAll: (type: string) => request(`/deps/reinstall-all?type=${type}`, { method: 'POST' }),
     getInstalled: (type: string) => request<Dependency[]>(`/deps/installed?type=${type}`)
   }
 }

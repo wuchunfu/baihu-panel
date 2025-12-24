@@ -193,6 +193,8 @@ func Setup(c *Controllers) *gin.Engine {
 				deps.DELETE("/:id", c.Dependency.Delete)
 				deps.POST("/install", c.Dependency.Install)
 				deps.POST("/uninstall/:id", c.Dependency.Uninstall)
+				deps.POST("/reinstall/:id", c.Dependency.Reinstall)
+				deps.POST("/reinstall-all", c.Dependency.ReinstallAll)
 				deps.GET("/installed", c.Dependency.GetInstalled)
 			}
 		}
