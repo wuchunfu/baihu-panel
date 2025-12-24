@@ -142,8 +142,8 @@ watch(() => route.query.task_id, (newTaskId) => {
         <!-- 表头 -->
         <div class="flex items-center gap-4 px-4 py-2 border-b bg-muted/50 text-sm text-muted-foreground font-medium overflow-x-auto">
           <span class="w-12 shrink-0">ID</span>
-          <span class="w-32 shrink-0">任务名称</span>
-          <span :class="selectedLog ? 'w-40 shrink-0 hidden sm:block' : 'flex-1'">命令</span>
+          <span class="w-20 sm:w-28 shrink-0">任务名称</span>
+          <span :class="selectedLog ? 'w-40 shrink-0 hidden sm:block' : 'w-32 sm:flex-1 shrink-0 sm:shrink'">命令</span>
           <span class="w-12 shrink-0 text-center">状态</span>
           <span class="w-20 text-right shrink-0">耗时</span>
           <span v-if="!selectedLog" class="w-40 text-right shrink-0 hidden md:block">执行时间</span>
@@ -163,10 +163,10 @@ watch(() => route.query.task_id, (newTaskId) => {
             @click="selectLog(log)"
           >
             <span class="w-12 shrink-0 text-muted-foreground text-sm">#{{ log.id }}</span>
-            <span class="w-32 font-medium truncate shrink-0 text-sm">
+            <span class="w-20 sm:w-28 font-medium truncate shrink-0 text-sm">
               <TextOverflow :text="log.task_name" title="任务名称" />
             </span>
-            <code :class="['text-muted-foreground truncate text-xs bg-muted px-2 py-1 rounded', selectedLog ? 'w-40 shrink-0 hidden sm:block' : 'flex-1']">
+            <code :class="['text-muted-foreground truncate text-xs bg-muted px-2 py-1 rounded', selectedLog ? 'w-40 shrink-0 hidden sm:block' : 'w-32 sm:flex-1 shrink-0 sm:shrink']">
               <TextOverflow :text="log.command" title="执行命令" />
             </code>
             <span class="w-12 flex justify-center shrink-0">

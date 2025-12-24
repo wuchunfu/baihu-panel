@@ -123,10 +123,10 @@ onMounted(loadEnvVars)
     <div class="rounded-lg border bg-card overflow-x-auto">
       <!-- 表头 -->
       <div class="flex items-center gap-4 px-4 py-2 border-b bg-muted/50 text-sm text-muted-foreground font-medium min-w-[500px]">
-        <span class="w-48 shrink-0">变量名</span>
-        <span class="flex-1">值</span>
-        <span class="w-48 shrink-0 hidden md:block">备注</span>
-        <span class="w-24 shrink-0 text-center">操作</span>
+        <span class="w-32 sm:w-48 shrink-0">变量名</span>
+        <span class="w-24 sm:flex-1 shrink-0 sm:shrink">值</span>
+        <span class="w-32 sm:w-48 shrink-0 hidden md:block">备注</span>
+        <span class="w-20 sm:w-24 shrink-0 text-center">操作</span>
       </div>
       <!-- 列表 -->
       <div class="divide-y min-w-[500px]">
@@ -138,14 +138,14 @@ onMounted(loadEnvVars)
           :key="env.id"
           class="flex items-center gap-4 px-4 py-2 hover:bg-muted/50 transition-colors"
         >
-          <code class="w-48 font-medium truncate shrink-0 text-xs bg-muted px-2 py-1 rounded">{{ env.name }}</code>
-          <span class="flex-1 font-mono text-muted-foreground truncate text-xs">
+          <code class="w-32 sm:w-48 font-medium truncate shrink-0 text-xs bg-muted px-2 py-1 rounded">{{ env.name }}</code>
+          <span class="w-24 sm:flex-1 shrink-0 sm:shrink font-mono text-muted-foreground truncate text-xs">
             <TextOverflow :text="showValues[env.id] ? env.value : maskValue(env.value)" title="变量值" />
           </span>
-          <span class="w-48 shrink-0 text-muted-foreground truncate text-sm hidden md:block">
+          <span class="w-32 sm:w-48 shrink-0 text-muted-foreground truncate text-sm hidden md:block">
             <TextOverflow :text="env.remark || '-'" title="备注" />
           </span>
-          <span class="w-24 shrink-0 flex justify-center gap-1">
+          <span class="w-20 sm:w-24 shrink-0 flex justify-center gap-1">
             <Button variant="ghost" size="icon" class="h-7 w-7" @click="toggleShow(env.id)" :title="showValues[env.id] ? '隐藏' : '显示'">
               <Eye v-if="!showValues[env.id]" class="h-3.5 w-3.5" />
               <EyeOff v-else class="h-3.5 w-3.5" />

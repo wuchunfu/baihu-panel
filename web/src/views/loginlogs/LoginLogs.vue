@@ -87,11 +87,11 @@ onMounted(loadLogs)
     <div class="rounded-lg border bg-card overflow-x-auto">
       <!-- 表头 -->
       <div class="flex items-center gap-4 px-4 py-2 border-b bg-muted/50 text-sm text-muted-foreground font-medium min-w-[500px]">
-        <span class="w-24 shrink-0">用户名</span>
-        <span class="w-32 shrink-0">IP 地址</span>
-        <span class="w-16 shrink-0 text-center">状态</span>
-        <span class="flex-1 hidden md:block">User Agent</span>
-        <span class="w-40 shrink-0 text-right">时间</span>
+        <span class="w-20 sm:w-24 shrink-0">用户名</span>
+        <span class="w-24 sm:w-32 shrink-0">IP 地址</span>
+        <span class="w-12 sm:w-16 shrink-0 text-center">状态</span>
+        <span class="w-32 sm:flex-1 shrink-0 sm:shrink hidden md:block">User Agent</span>
+        <span class="w-32 sm:w-40 shrink-0 text-right">时间</span>
       </div>
       <!-- 列表 -->
       <div class="divide-y min-w-[500px]">
@@ -103,15 +103,15 @@ onMounted(loadLogs)
           :key="log.id"
           class="flex items-center gap-4 px-4 py-2 hover:bg-muted/50 transition-colors"
         >
-          <span class="w-24 shrink-0 font-medium text-sm truncate">{{ log.username }}</span>
-          <code class="w-32 shrink-0 text-xs text-muted-foreground bg-muted px-2 py-1 rounded">{{ log.ip }}</code>
-          <span class="w-16 shrink-0 flex justify-center">
+          <span class="w-20 sm:w-24 shrink-0 font-medium text-sm truncate">{{ log.username }}</span>
+          <code class="w-24 sm:w-32 shrink-0 text-xs text-muted-foreground bg-muted px-2 py-1 rounded truncate">{{ log.ip }}</code>
+          <span class="w-12 sm:w-16 shrink-0 flex justify-center">
             <span :class="['h-2 w-2 rounded-full', log.status === 'success' ? 'bg-green-500' : 'bg-red-500']"></span>
           </span>
-          <span class="flex-1 text-xs text-muted-foreground truncate hidden md:block">
+          <span class="w-32 sm:flex-1 shrink-0 sm:shrink text-xs text-muted-foreground truncate hidden md:block">
             <TextOverflow :text="log.user_agent || '-'" title="User Agent" />
           </span>
-          <span class="w-40 shrink-0 text-right text-xs text-muted-foreground">{{ log.created_at }}</span>
+          <span class="w-32 sm:w-40 shrink-0 text-right text-xs text-muted-foreground">{{ log.created_at }}</span>
         </div>
       </div>
       <!-- 分页 -->

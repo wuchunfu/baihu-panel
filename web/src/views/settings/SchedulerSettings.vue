@@ -64,23 +64,23 @@ onMounted(loadSettings)
 <template>
   <div class="space-y-4">
     <div class="grid grid-cols-1 sm:grid-cols-4 items-start gap-2 sm:gap-4">
-      <Label class="sm:text-right pt-2">Worker数</Label>
+      <Label class="sm:text-right pt-2">Worker数量</Label>
       <div class="sm:col-span-3 space-y-1">
-        <Input v-model="form.worker_count" type="number" class="w-24" />
+        <Input v-model="form.worker_count" type="number" class="w-full sm:w-24" />
         <span class="text-xs text-muted-foreground block">并发执行任务的 worker 数量</span>
       </div>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-4 items-start gap-2 sm:gap-4">
       <Label class="sm:text-right pt-2">队列大小</Label>
       <div class="sm:col-span-3 space-y-1">
-        <Input v-model="form.queue_size" type="number" class="w-24" />
+        <Input v-model="form.queue_size" type="number" class="w-full sm:w-24" />
         <span class="text-xs text-muted-foreground block">任务队列缓冲区大小</span>
       </div>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-4 items-start gap-2 sm:gap-4">
       <Label class="sm:text-right pt-2">速率间隔</Label>
       <div class="sm:col-span-3 space-y-1">
-        <Input v-model="form.rate_interval" type="number" class="w-24" />
+        <Input v-model="form.rate_interval" type="number" class="w-full sm:w-24" />
         <span class="text-xs text-muted-foreground block">ms，任务启动间隔（200ms = 每秒最多5个）</span>
       </div>
     </div>
