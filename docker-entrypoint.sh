@@ -29,7 +29,7 @@ else
 fi
 
 # ============================
-# Node 环境（npm prefix 方案，核心）
+# Node 环境（npm prefix）
 # ============================
 echo "[entrypoint] Initializing Node npm prefix..."
 
@@ -43,7 +43,7 @@ npm config set fund false
 npm config set progress false
 npm config set maxsockets 2
 
-# Node 内存限制（非常关键）
+# Node 内存限制
 export NODE_OPTIONS="--max-old-space-size=256"
 
 # ============================
@@ -53,7 +53,7 @@ export PATH="$PYTHON_VENV_DIR/bin:$NODE_ENV_DIR/bin:$PATH"
 export NODE_PATH="$NODE_ENV_DIR/lib/node_modules"
 
 # ============================
-# 打印确认（强烈建议保留）
+# 打印确认
 # ============================
 echo "[entrypoint] python: $(which python)"
 echo "[entrypoint] pip: $(which pip)"
