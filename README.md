@@ -25,65 +25,10 @@
 - 🔐 **环境变量：** 安全存储敏感配置，任务执行时自动注入
 - 🎨 **现代 UI：** 响应式设计，深色/浅色主题切换
 
-## 效果图 📺
-
-<!-- TODO: 添加效果图 -->
-
-## 快速开始 🚀
-
-### Docker 部署（推荐）
-
-```bash
-docker run -d \
-  --name baihu \
-  -p 8052:8052 \
-  -v $(pwd)/data:/app/data \
-  -v $(pwd)/configs:/app/configs \
-  -v $(pwd)/envs:/app/envs \
-  -e TZ=Asia/Shanghai \
-  --restart unless-stopped \
-  ghcr.io/engigu/baihu:main
-```
-
-### Docker Compose
-
-```yaml
-services:
-  baihu:
-    image: ghcr.io/engigu/baihu:main
-    container_name: baihu
-    ports:
-      - "8052:8052"
-    volumes:
-      - ./data:/app/data
-      - ./configs:/app/configs
-      - ./envs:/app/envs
-    environment:
-      - TZ=Asia/Shanghai
-      # 以下环境变量可覆盖配置文件（可选）
-      # - BH_SERVER_PORT=8052
-      # - BH_DB_TYPE=mysql
-      # - BH_DB_HOST=localhost
-      # - BH_DB_PORT=3306
-      # - BH_DB_USER=root
-      # - BH_DB_PASSWORD=password
-      # - BH_DB_NAME=baihu
-    restart: unless-stopped
-```
-
-```bash
-docker-compose up -d
-```
-
-### 访问面板
-
-启动后访问：http://localhost:8052
-
-**默认账号：** `admin` / `123456`
-
-> ⚠️ 首次登录后请立即修改默认密码
-
 ## 功能特性 📋
+
+<details>
+<summary><b>点击展开查看详细功能</b></summary>
 
 ### 定时任务管理
 - 支持标准 Cron 表达式调度
@@ -122,6 +67,145 @@ docker-compose up -d
 - 调度参数热重载
 - 数据备份与恢复
 
+</details>
+
+## 效果图 📺
+
+<!-- TODO: 添加效果图 -->
+
+## 快速开始 🚀
+
+<details>
+<summary><b>方式一：环境变量部署（推荐）</b></summary>
+
+通过环境变量指定配置，简单灵活，适合容器编排场景。
+
+**使用 SQLite（默认）：**
+
+```bash
+docker run -d \
+  --name baihu \
+  -p 8052:8052 \
+  -v $(pwd)/data:/app/data \
+  -v $(pwd)/envs:/app/envs \
+  -e TZ=Asia/Shanghai \
+  --restart unless-stopped \
+  ghcr.io/engigu/baihu:latest
+```
+
+**Docker Compose（SQLite）：**
+
+```yaml
+services:
+  baihu:
+    image: ghcr.io/engigu/baihu:latest
+    container_name: baihu
+    ports:
+      - "8052:8052"
+    volumes:
+      - ./data:/app/data
+      - ./envs:/app/envs
+    environment:
+      - TZ=Asia/Shanghai
+    restart: unless-stopped
+```
+
+**使用 MySQL：**
+
+```bash
+docker run -d \
+  --name baihu \
+  -p 8052:8052 \
+  -v $(pwd)/data:/app/data \
+  -v $(pwd)/envs:/app/envs \
+  -e TZ=Asia/Shanghai \
+  -e BH_DB_TYPE=mysql \
+  -e BH_DB_HOST=mysql-server \
+  -e BH_DB_PORT=3306 \
+  -e BH_DB_USER=root \
+  -e BH_DB_PASSWORD=your_password \
+  -e BH_DB_NAME=baihu \
+  --restart unless-stopped \
+  ghcr.io/engigu/baihu:latest
+```
+
+**Docker Compose（MySQL）：**
+
+```yaml
+services:
+  baihu:
+    image: ghcr.io/engigu/baihu:latest
+    container_name: baihu
+    ports:
+      - "8052:8052"
+    volumes:
+      - ./data:/app/data
+      - ./envs:/app/envs
+    environment:
+      - TZ=Asia/Shanghai
+      - BH_DB_TYPE=mysql
+      - BH_DB_HOST=mysql-server
+      - BH_DB_PORT=3306
+      - BH_DB_USER=root
+      - BH_DB_PASSWORD=your_password
+      - BH_DB_NAME=baihu
+    restart: unless-stopped
+```
+
+</details>
+
+<details>
+<summary><b>方式二：配置文件部署</b></summary>
+
+通过挂载 `config.ini` 配置文件来管理配置，适合需要持久化配置的场景。
+
+**Docker 命令：**
+
+```bash
+docker run -d \
+  --name baihu \
+  -p 8052:8052 \
+  -v $(pwd)/data:/app/data \
+  -v $(pwd)/configs:/app/configs \
+  -v $(pwd)/envs:/app/envs \
+  -e TZ=Asia/Shanghai \
+  --restart unless-stopped \
+  ghcr.io/engigu/baihu:latest
+```
+
+**Docker Compose：**
+
+```yaml
+services:
+  baihu:
+    image: ghcr.io/engigu/baihu:latest
+    container_name: baihu
+    ports:
+      - "8052:8052"
+    volumes:
+      - ./data:/app/data
+      - ./configs:/app/configs
+      - ./envs:/app/envs
+    environment:
+      - TZ=Asia/Shanghai
+    restart: unless-stopped
+```
+
+首次使用需要复制 `configs/config.example.ini` 为 `configs/config.ini`，然后根据需要修改配置。
+
+</details>
+
+> 💡 环境变量优先级高于配置文件，两种方式可以混合使用。
+
+
+### 访问面板
+
+启动后访问：http://localhost:8052
+
+**默认账号：** `admin` / `123456`
+
+> ⚠️ 首次登录后请立即修改默认密码
+
 ## 目录结构 📁
 
 ```
@@ -150,6 +234,9 @@ docker-compose up -d
 > 💡 通过挂载 `./envs:/app/envs` 可以持久化 Python 和 Node.js 环境，避免每次重启容器都重新安装依赖。
 
 ## 配置说明 ⚙️
+
+<details>
+<summary><b>点击展开查看配置详情</b></summary>
 
 ### 配置文件
 
@@ -186,26 +273,11 @@ table_prefix = baihu_
 | `BH_DB_NAME` | database.dbname | 数据库名称 | ql_panel |
 | `BH_DB_PATH` | database.path | SQLite 文件路径 | ./data/ql.db |
 | `BH_DB_TABLE_PREFIX` | database.table_prefix | 表前缀 | baihu_ |
-| `BH_SECRET` | security.secret | JWT 密钥 | 自动生成 |
+| `BH_SECRET` | security.secret | JWT 密钥 | 手动指定 |
 
-**使用 MySQL 示例：**
+**MySQL 示例：**
 
-```bash
-docker run -d \
-  --name baihu \
-  -p 8052:8052 \
-  -v $(pwd)/data:/app/data \
-  -v $(pwd)/envs:/app/envs \
-  -e TZ=Asia/Shanghai \
-  -e BH_DB_TYPE=mysql \
-  -e BH_DB_HOST=mysql-server \
-  -e BH_DB_PORT=3306 \
-  -e BH_DB_USER=root \
-  -e BH_DB_PASSWORD=your_password \
-  -e BH_DB_NAME=baihu \
-  --restart unless-stopped \
-  ghcr.io/engigu/baihu:main
-```
+参考上方「方式一：环境变量部署」中的 MySQL 配置示例。
 
 ### 调度设置
 
@@ -219,31 +291,7 @@ docker run -d \
 
 修改调度设置后立即生效，无需重启服务。
 
-## 技术栈 🛠️
-
-**后端：** Go 1.21+ / Gin / GORM / SQLite / JWT / Cron / WebSocket
-
-**前端：** Vue 3 / TypeScript / Vite / Tailwind CSS / Shadcn/ui / Xterm.js
-
-**部署：** Docker / GitHub Actions / Multi-arch (amd64/arm64)
-
-## 本地开发 📖
-
-```bash
-# 克隆项目
-git clone https://github.com/engigu/baihu.git
-cd baihu
-
-# 安装依赖
-make deps
-cd web && npm install && cd ..
-
-# 构建前端 + 后端
-make build-all
-
-# 运行
-./baihu
-```
+</details>
 
 ## 贡献 🤝
 
