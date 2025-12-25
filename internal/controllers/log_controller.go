@@ -20,6 +20,7 @@ type TaskLogResponse struct {
 	ID        uint             `json:"id"`
 	TaskID    uint             `json:"task_id"`
 	TaskName  string           `json:"task_name"`
+	TaskType  string           `json:"task_type"`
 	Command   string           `json:"command"`
 	Status    string           `json:"status"`
 	Duration  int64            `json:"duration"`
@@ -61,17 +62,23 @@ func (lc *LogController) GetLogs(c *gin.Context) {
 
 	var tasks []models.Task
 	database.DB.Where("id IN ?", taskIDList).Find(&tasks)
-	taskMap := make(map[uint]string)
+	taskMap := make(map[uint]models.Task)
 	for _, t := range tasks {
-		taskMap[t.ID] = t.Name
+		taskMap[t.ID] = t
 	}
 
 	result := make([]TaskLogResponse, len(logs))
 	for i, log := range logs {
+		task := taskMap[log.TaskID]
+		taskType := task.Type
+		if taskType == "" {
+			taskType = "task"
+		}
 		result[i] = TaskLogResponse{
 			ID:        log.ID,
 			TaskID:    log.TaskID,
-			TaskName:  taskMap[log.TaskID],
+			TaskName:  task.Name,
+			TaskType:  taskType,
 			Command:   log.Command,
 			Status:    log.Status,
 			Duration:  log.Duration,

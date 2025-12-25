@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import Pagination from '@/components/Pagination.vue'
 import LogViewer from './LogViewer.vue'
-import { RefreshCw, X, Search, Maximize2 } from 'lucide-vue-next'
+import { RefreshCw, X, Search, Maximize2, GitBranch, Terminal } from 'lucide-vue-next'
 import { api, type TaskLog, type LogDetail } from '@/api'
 import { toast } from 'vue-sonner'
 import pako from 'pako'
@@ -101,6 +101,10 @@ function formatDuration(ms: number): string {
   return `${(ms / 60000).toFixed(1)}m`
 }
 
+function getTaskTypeTitle(type: string) {
+  return type === 'repo' ? '仓库同步' : '普通任务'
+}
+
 onMounted(() => {
   // 从 URL 读取 task_id 参数
   const taskIdParam = route.query.task_id
@@ -142,6 +146,7 @@ watch(() => route.query.task_id, (newTaskId) => {
         <!-- 表头 -->
         <div class="flex items-center gap-4 px-4 py-2 border-b bg-muted/50 text-sm text-muted-foreground font-medium overflow-x-auto">
           <span class="w-12 shrink-0">ID</span>
+          <span class="w-8 shrink-0 text-center">类型</span>
           <span class="w-20 sm:w-28 shrink-0">任务名称</span>
           <span :class="selectedLog ? 'w-40 shrink-0 hidden sm:block' : 'w-32 sm:flex-1 shrink-0 sm:shrink'">命令</span>
           <span class="w-12 shrink-0 text-center">状态</span>
@@ -163,6 +168,10 @@ watch(() => route.query.task_id, (newTaskId) => {
             @click="selectLog(log)"
           >
             <span class="w-12 shrink-0 text-muted-foreground text-sm">#{{ log.id }}</span>
+            <span class="w-8 shrink-0 flex justify-center" :title="getTaskTypeTitle(log.task_type || 'task')">
+              <GitBranch v-if="log.task_type === 'repo'" class="h-4 w-4 text-primary" />
+              <Terminal v-else class="h-4 w-4 text-muted-foreground" />
+            </span>
             <span class="w-20 sm:w-28 font-medium truncate shrink-0 text-sm">
               <TextOverflow :text="log.task_name" title="任务名称" />
             </span>

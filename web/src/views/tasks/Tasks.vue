@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import Pagination from '@/components/Pagination.vue'
 import DirTreeSelect from '@/components/DirTreeSelect.vue'
-import { Plus, Play, Pencil, Trash2, Search, ScrollText, ChevronDown, X, GitBranch } from 'lucide-vue-next'
+import { Plus, Play, Pencil, Trash2, Search, ScrollText, ChevronDown, X, GitBranch, Terminal } from 'lucide-vue-next'
 import { api, type Task, type EnvVar, type RepoConfig } from '@/api'
 import { toast } from 'vue-sonner'
 import { useSiteSettings } from '@/composables/useSiteSettings'
@@ -267,8 +267,8 @@ function viewLogs(taskId: number) {
   router.push({ path: '/history', query: { task_id: String(taskId) } })
 }
 
-function getTaskTypeLabel(type: string) {
-  return type === 'repo' ? '仓库' : '普通'
+function getTaskTypeTitle(type: string) {
+  return type === 'repo' ? '仓库同步' : '普通任务'
 }
 
 onMounted(() => {
@@ -302,7 +302,7 @@ onMounted(() => {
       <!-- 表头 -->
       <div class="flex items-center gap-4 px-4 py-2 border-b bg-muted/50 text-sm text-muted-foreground font-medium min-w-[700px]">
         <span class="w-12 shrink-0">ID</span>
-        <span class="w-16 shrink-0">类型</span>
+        <span class="w-8 shrink-0 text-center">类型</span>
         <span class="w-20 sm:w-28 shrink-0">名称</span>
         <span class="w-32 sm:flex-1 shrink-0 sm:shrink">命令/地址</span>
         <span class="w-32 shrink-0 hidden md:block">定时规则</span>
@@ -322,10 +322,9 @@ onMounted(() => {
           class="flex items-center gap-4 px-4 py-2 hover:bg-muted/50 transition-colors"
         >
           <span class="w-12 shrink-0 text-muted-foreground text-sm">#{{ task.id }}</span>
-          <span class="w-16 shrink-0">
-            <Badge :variant="task.type === 'repo' ? 'default' : 'secondary'" class="text-xs">
-              {{ getTaskTypeLabel(task.type || 'task') }}
-            </Badge>
+          <span class="w-8 shrink-0 flex justify-center" :title="getTaskTypeTitle(task.type || 'task')">
+            <GitBranch v-if="task.type === 'repo'" class="h-4 w-4 text-primary" />
+            <Terminal v-else class="h-4 w-4 text-muted-foreground" />
           </span>
           <span class="w-20 sm:w-28 font-medium truncate shrink-0 text-sm">
             <TextOverflow :text="task.name" title="任务名称" />

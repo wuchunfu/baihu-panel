@@ -285,6 +285,7 @@ export interface TaskLog {
   id: number
   task_id: number
   task_name: string
+  task_type: string
   command: string
   status: string
   duration: number
