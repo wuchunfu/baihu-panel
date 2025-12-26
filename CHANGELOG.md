@@ -1,7 +1,4 @@
-
-轻量级定时任务管理系统，基于 Go + Vue 3 构建。
-
-> ⚠️ 出于安全考虑，目前仅支持 Docker 部署方式。[镜像地址](https://github.com/engigu/baihu-panel/pkgs/container/baihu)
+> 出于安全考虑，目前仅支持 Docker/Compose 部署方式。[镜像地址](https://github.com/engigu/baihu-panel/pkgs/container/baihu)
 
 ## 快速部署
 
