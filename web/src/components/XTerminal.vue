@@ -134,18 +134,18 @@ function connectWebSocket() {
 
   ws.onopen = () => {
     terminal?.writeln('\x1b[32m已连接到终端\x1b[0m')
-    terminal?.writeln('')
-    terminal?.focus()
     emit('connected')
 
-    // 如果有初始命令，延迟发送
+    // 如果有初始命令，延迟发送（PTY 会自动回显命令）
     if (props.initialCommand) {
       setTimeout(() => {
         if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(props.initialCommand + '\r\n')
+          // 直接发送命令，PTY 会回显
+          ws.send(props.initialCommand + '\r')
         }
-      }, 300)
+      }, 100)
     }
+    terminal?.focus()
   }
 
   ws.onmessage = (event) => {

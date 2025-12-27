@@ -471,14 +471,14 @@ onUnmounted(() => {
 
     <!-- 终端弹窗 -->
     <Dialog v-model:open="showTerminalDialog">
-      <DialogContent class="w-[calc(100%-2rem)] sm:max-w-3xl h-[60vh] sm:h-[70vh] flex flex-col p-0 overflow-hidden" :show-close-button="false">
-        <div class="flex items-center justify-between px-3 sm:px-4 py-2 border-b bg-[#252526] rounded-t-lg">
+      <DialogContent class="w-[calc(100%-2rem)] sm:max-w-3xl h-[60vh] sm:h-[70vh] flex flex-col p-0 overflow-hidden !bg-[#1e1e1e] border-[#3c3c3c]" :show-close-button="false">
+        <div class="flex items-center justify-between px-3 sm:px-4 py-2 border-b border-[#3c3c3c]">
           <span class="text-xs sm:text-sm font-medium text-gray-300">运行脚本</span>
-          <Button variant="ghost" size="icon" class="h-6 w-6 text-gray-400 hover:text-white" @click="closeTerminal">
+          <Button variant="ghost" size="icon" class="h-6 w-6 text-gray-400 hover:text-white hover:bg-white/10" @click="closeTerminal">
             <X class="h-4 w-4" />
           </Button>
         </div>
-        <div class="flex-1 overflow-hidden p-1 rounded-b-lg">
+        <div class="flex-1 overflow-hidden">
           <XTerminal
             v-if="showTerminalDialog"
             ref="terminalRef"
