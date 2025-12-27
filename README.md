@@ -120,6 +120,11 @@ services:
       - BH_DB_TYPE=sqlite
       - BH_DB_PATH=/app/data/ql.db
       - BH_DB_TABLE_PREFIX=baihu_
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
 ```
 
@@ -168,6 +173,11 @@ services:
       - BH_DB_PASSWORD=your_password
       - BH_DB_NAME=baihu
       - BH_DB_TABLE_PREFIX=baihu_
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
 ```
 
@@ -207,6 +217,11 @@ services:
       - ./envs:/app/envs
     environment:
       - TZ=Asia/Shanghai
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
 ```
 
