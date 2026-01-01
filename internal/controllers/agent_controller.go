@@ -430,9 +430,7 @@ func (c *AgentController) wsReadPump(ac *services.AgentConnection, agent *models
 	for {
 		_, message, err := ac.ReadMessage()
 		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				logger.Warnf("[AgentWS] Agent #%d 读取错误: %v", agent.ID, err)
-			}
+			logger.Warnf("[AgentWS] Agent #%d 读取错误: %v", agent.ID, err)
 			break
 		}
 
