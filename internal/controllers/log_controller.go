@@ -17,14 +17,16 @@ func NewLogController() *LogController {
 }
 
 type TaskLogResponse struct {
-	ID        uint             `json:"id"`
-	TaskID    uint             `json:"task_id"`
-	TaskName  string           `json:"task_name"`
-	TaskType  string           `json:"task_type"`
-	Command   string           `json:"command"`
-	Status    string           `json:"status"`
-	Duration  int64            `json:"duration"`
-	CreatedAt models.LocalTime `json:"created_at"`
+	ID        uint              `json:"id"`
+	TaskID    uint              `json:"task_id"`
+	TaskName  string            `json:"task_name"`
+	TaskType  string            `json:"task_type"`
+	Command   string            `json:"command"`
+	Status    string            `json:"status"`
+	Duration  int64             `json:"duration"`
+	StartTime *models.LocalTime `json:"start_time"`
+	EndTime   *models.LocalTime `json:"end_time"`
+	CreatedAt models.LocalTime  `json:"created_at"`
 }
 
 func (lc *LogController) GetLogs(c *gin.Context) {
@@ -82,6 +84,8 @@ func (lc *LogController) GetLogs(c *gin.Context) {
 			Command:   log.Command,
 			Status:    log.Status,
 			Duration:  log.Duration,
+			StartTime: log.StartTime,
+			EndTime:   log.EndTime,
 			CreatedAt: log.CreatedAt,
 		}
 	}
@@ -109,6 +113,8 @@ func (lc *LogController) GetLogDetail(c *gin.Context) {
 		"output":     log.Output,
 		"status":     log.Status,
 		"duration":   log.Duration,
+		"start_time": log.StartTime,
+		"end_time":   log.EndTime,
 		"created_at": log.CreatedAt,
 	})
 }

@@ -209,7 +209,7 @@ watch(() => route.query.task_id, (newTaskId) => {
                 </span>
               </span>
               <span class="w-16 text-right shrink-0 text-muted-foreground text-xs">{{ formatDuration(log.duration) }}</span>
-              <span v-if="!selectedLog" class="w-40 text-right shrink-0 text-muted-foreground text-xs hidden md:block">{{ log.created_at }}</span>
+              <span v-if="!selectedLog" class="w-40 text-right shrink-0 text-muted-foreground text-xs hidden md:block">{{ log.start_time || log.created_at }}</span>
             </div>
           </div>
         </div>
