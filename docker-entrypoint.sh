@@ -68,11 +68,11 @@ export PYTHONPATH=/app/data/scripts:$PYTHONPATH
 # ============================
 # 打印确认
 # ============================
-echo "[entrypoint] python: $(which python)"
-echo "[entrypoint] pip: $(which pip)"
-echo "[entrypoint] node: $(which node)"
-echo "[entrypoint] npm prefix: $(npm config get prefix)"
-echo "[entrypoint] npm root: $(npm root -g)"
+echo "[entrypoint][Python3] python: $(which python)"
+echo "[entrypoint][Python3] pip: $(which pip)"
+echo "[entrypoint][Nodejs] node: $(which node)"
+echo "[entrypoint][Nodejs] npm prefix: $(npm config get prefix)"
+echo "[entrypoint][Nodejs] npm root: $(npm root -g)"
 
 # ============================
 # 启动应用
