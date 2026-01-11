@@ -97,7 +97,7 @@ docker run -d \
   -e BH_SERVER_PORT=8052 \
   -e BH_SERVER_HOST=0.0.0.0 \
   -e BH_DB_TYPE=sqlite \
-  -e BH_DB_PATH=/app/data/ql.db \
+  -e BH_DB_PATH=/app/data/baihu.db \
   -e BH_DB_TABLE_PREFIX=baihu_ \
   --restart unless-stopped \
   ghcr.io/engigu/baihu:latest
@@ -120,7 +120,7 @@ services:
       - BH_SERVER_PORT=8052
       - BH_SERVER_HOST=0.0.0.0
       - BH_DB_TYPE=sqlite
-      - BH_DB_PATH=/app/data/ql.db
+      - BH_DB_PATH=/app/data/baihu.db
       - BH_DB_TABLE_PREFIX=baihu_
     logging:
       driver: json-file
@@ -248,7 +248,7 @@ services:
 ./
 ├── baihu                 # 可执行文件
 ├── data/                 # 数据目录（自动创建）
-│   ├── ql.db             # SQLite 数据库
+│   ├── baihu.db             # SQLite 数据库
 │   └── scripts/          # 脚本文件存储
 ├── configs/
 │   └── config.ini        # 配置文件（自动创建）
@@ -307,7 +307,7 @@ table_prefix = baihu_
 | `BH_DB_USER` | database.user | 数据库用户 | root |
 | `BH_DB_PASSWORD` | database.password | 数据库密码 | - |
 | `BH_DB_NAME` | database.dbname | 数据库名称 | ql_panel |
-| `BH_DB_PATH` | database.path | SQLite 文件路径 | ./data/ql.db |
+| `BH_DB_PATH` | database.path | SQLite 文件路径 | ./data/baihu.db |
 | `BH_DB_TABLE_PREFIX` | database.table_prefix | 表前缀 | baihu_ |
 | `BH_SECRET` | security.secret | JWT 密钥 | 手动指定 |
 
@@ -358,7 +358,7 @@ services:
       - BH_SERVER_PORT=8052
       - BH_SERVER_HOST=0.0.0.0
       - BH_DB_TYPE=sqlite
-      - BH_DB_PATH=/app/data/ql.db
+      - BH_DB_PATH=/app/data/baihu.db
       - BH_DB_TABLE_PREFIX=baihu_
     logging:
       driver: json-file

@@ -9,7 +9,7 @@ const (
 	DataDir = "./data"
 
 	// DefaultDBPath 默认数据库路径
-	DefaultDBPath = "./data/ql.db"
+	DefaultDBPath = "./data/baihu.db"
 
 	// WebDistDir 前端构建目录
 	WebDistDir = "./web/dist"
