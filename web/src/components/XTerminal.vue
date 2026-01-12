@@ -215,13 +215,26 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div ref="terminalRef" class="terminal-container w-full h-full bg-[#1e1e1e]" />
+  <div ref="terminalRef" class="terminal-container w-full h-full !bg-[#1e1e1e]" />
 </template>
 
 <style scoped>
+.terminal-container {
+  background: #1e1e1e !important;
+}
+
+.terminal-container :deep(.xterm) {
+  padding: 0;
+}
+
 .terminal-container :deep(.xterm-viewport) {
   scrollbar-width: thin;
   scrollbar-color: #4a4a4a #1e1e1e;
+  background: #1e1e1e !important;
+}
+
+.terminal-container :deep(.xterm-screen) {
+  background: #1e1e1e !important;
 }
 
 .terminal-container :deep(.xterm-viewport::-webkit-scrollbar) {

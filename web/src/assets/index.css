@@ -144,6 +144,166 @@
   }
 }
 
+/* 高级感增强 - 微妙的渐变背景 */
+body {
+  background: linear-gradient(135deg, var(--background) 0%, oklch(from var(--background) calc(l * 0.98) c h) 100%);
+  background-attachment: fixed;
+}
+
+.dark body {
+  background: linear-gradient(135deg, var(--background) 0%, oklch(from var(--background) calc(l * 1.05) c h) 100%);
+}
+
+/* 卡片增强 - 添加微妙阴影 */
+[class*="card"] {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05);
+}
+
+[class*="card"]:hover {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.08);
+}
+
+.dark [class*="card"] {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+}
+
+.dark [class*="card"]:hover {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+}
+
+/* 按钮增强 - 更流畅的交互 */
+button, [role="button"] {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button:active, [role="button"]:active {
+  transform: scale(0.98);
+}
+
+/* 输入框增强 - 聚焦效果 */
+input:focus, textarea:focus, select:focus {
+  box-shadow: 0 0 0 3px oklch(from var(--ring) l c h / 0.1);
+  transition: box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 链接增强 */
+a {
+  transition: color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 表格增强 - 悬停效果 */
+table tbody tr {
+  transition: background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+table tbody tr:hover {
+  background-color: oklch(from var(--muted) l c h / 0.5);
+}
+
+/* 模态框和弹出层增强 - 背景模糊 */
+[role="dialog"]::backdrop, [data-state="open"]::backdrop {
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 代码块增强 */
+code, pre {
+  background: oklch(from var(--muted) l c h / 0.5);
+  border-radius: calc(var(--radius) - 2px);
+  padding: 0.125rem 0.375rem;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.875em;
+}
+
+pre code {
+  padding: 0;
+  background: transparent;
+}
+
+/* 徽章和标签增强 */
+[class*="badge"], [class*="tag"] {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+[class*="badge"]:hover, [class*="tag"]:hover {
+  box-shadow: 0 2px 4px 0 rgb(0 0 0 / 0.1);
+}
+
+/* 加载动画增强 */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    oklch(from var(--muted) l c h / 0.3) 0%,
+    oklch(from var(--muted) l c h / 0.5) 50%,
+    oklch(from var(--muted) l c h / 0.3) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+/* 滚动条美化增强 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: oklch(from var(--muted-foreground) l c h / 0.2);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(from var(--muted-foreground) l c h / 0.3);
+  background-clip: padding-box;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: oklch(from var(--muted-foreground) l c h / 0.3);
+  background-clip: padding-box;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: oklch(from var(--muted-foreground) l c h / 0.4);
+  background-clip: padding-box;
+}
+
+/* 选中文本样式 */
+::selection {
+  background: oklch(from var(--primary) l c h / 0.2);
+  color: var(--foreground);
+}
+
+.dark ::selection {
+  background: oklch(from var(--primary) l c h / 0.3);
+}
+
 /* Number input spinner buttons - dark mode */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
