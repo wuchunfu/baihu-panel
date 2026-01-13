@@ -193,7 +193,8 @@ const renderLineChart = () => {
       categories: sendStats.value.map(item => item.day.slice(5)),
       axisBorder: { show: false },
       axisTicks: { show: false },
-      labels: { style: { colors: textColor, fontSize: '12px', fontFamily: 'Inter, sans-serif' } }
+      labels: { style: { colors: textColor, fontSize: '12px', fontFamily: 'Inter, sans-serif' } },
+      tooltip: { enabled: false }
     },
     yaxis: {
       labels: {
