@@ -60,7 +60,16 @@ function initTerminal(forceConnect = false) {
   fitAddon = new FitAddon()
   terminal.loadAddon(fitAddon)
   terminal.open(terminalRef.value)
-  fitAddon.fit()
+  
+  // 延迟调用 fit，确保 DOM 已渲染
+  setTimeout(() => {
+    try {
+      fitAddon?.fit()
+    } catch (e) {
+      console.warn('Terminal fit failed:', e)
+    }
+  }, 50)
+  
   terminal.focus()
 
   // autoConnect 或者强制连接时才连接
@@ -195,7 +204,11 @@ function dispose() {
 }
 
 function handleResize() {
-  fitAddon?.fit()
+  try {
+    fitAddon?.fit()
+  } catch (e) {
+    console.warn('Terminal resize failed:', e)
+  }
 }
 
 // 暴露方法给父组件
@@ -207,7 +220,8 @@ defineExpose({
 
 onMounted(() => {
   window.addEventListener('resize', handleResize)
-  setTimeout(initTerminal, 100)
+  // 延迟初始化，确保 DOM 完全渲染
+  setTimeout(initTerminal, 150)
 })
 
 onUnmounted(() => {
