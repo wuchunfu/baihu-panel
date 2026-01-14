@@ -197,9 +197,7 @@ async function runScript() {
   showTerminalDialog.value = true
   // 等待 DOM 更新后初始化终端
   await nextTick()
-  setTimeout(() => {
-    terminalRef.value?.initTerminal(true)
-  }, 100)
+  terminalRef.value?.initTerminal(true)
 }
 
 function closeTerminal() {

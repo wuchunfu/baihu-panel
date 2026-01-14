@@ -39,10 +39,15 @@ function initTerminal(forceConnect = false) {
     terminal.dispose()
     terminal = null
   }
+  
+  // 确保旧的 WebSocket 完全关闭
   if (ws) {
-    ws.close()
+    if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+      ws.close()
+    }
     ws = null
   }
+  
   inputBuffer = ''
   isPtyMode = false
 
@@ -74,7 +79,10 @@ function initTerminal(forceConnect = false) {
 
   // autoConnect 或者强制连接时才连接
   if (props.autoConnect || forceConnect) {
-    connectWebSocket()
+    // 延迟连接，确保终端完全初始化
+    setTimeout(() => {
+      connectWebSocket()
+    }, 100)
   }
 
   // 清除当前输入行（Windows 模式用）
@@ -194,13 +202,17 @@ function reconnect() {
 
 function dispose() {
   if (ws) {
-    ws.close()
+    if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+      ws.close()
+    }
     ws = null
   }
   if (terminal) {
     terminal.dispose()
     terminal = null
   }
+  inputBuffer = ''
+  isPtyMode = false
 }
 
 function handleResize() {
