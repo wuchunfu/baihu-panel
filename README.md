@@ -1,7 +1,6 @@
 # 白虎面板 
 
 [![Hits](https://hits.sh/github.com/engigu/baihu-panel.svg?view=today-total)](https://hits.sh/github.com/engigu/baihu-panel/)
-[![Image Tags](https://ghcr-badge.egpl.dev/engigu/baihu/tags?color=%2344cc11&ignore=latest%2Cmain*%2Cdev&n=3&label=docker+tags&trim=)](https://ghcr-badge.egpl.dev/engigu/baihu/tags)
 ![Latest Version](https://ghcr-badge.egpl.dev/engigu/baihu/latest_tag?color=%2344cc11&ignore=latest%2Cmain*&label=docker+version&trim=)
 ![Image Size](https://ghcr-badge.egpl.dev/engigu/baihu/size?color=%2344cc11&tag=latest&label=docker+image&trim=)
 ![Image pulls](https://img.shields.io/badge/dynamic/json?url=https://ghcr-badge.elias.eu.org/api/engigu/baihu-panel/baihu&query=downloadCount&style=flat&label=docker%20pulls&color=44cc11)
