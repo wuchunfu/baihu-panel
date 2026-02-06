@@ -10,19 +10,59 @@ import urllib.request
 import urllib.error
 
 
-def run(cmd, env=None, cwd=None):
+def run(cmd, env=None, cwd=None, capture_output=False):
     """执行命令并打印输出"""
-    print(">>", " ".join(cmd))
-    result = subprocess.run(
-        cmd,
-        cwd=cwd,
-        env=env,
-        stdout=sys.stdout,
-        stderr=sys.stderr,
-    )
+    if not capture_output:
+        print(">>", " ".join(cmd))
+
+    if capture_output:
+        # 捕获模式：不打印到屏幕，返回 stdout
+        result = subprocess.run(
+            cmd,
+            cwd=cwd,
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=30,
+            encoding='utf-8',
+            errors='ignore'
+        )
+    else:
+        # 直通模式：直接打印到屏幕
+        result = subprocess.run(
+            cmd,
+            cwd=cwd,
+            env=env,
+            stdout=sys.stdout,
+            stderr=sys.stderr,
+        )
+
     if result.returncode != 0:
+        if capture_output:
+            return None
         sys.exit(result.returncode)
 
+    if capture_output:
+        return result.stdout.strip()
+    return result
+
+
+def get_remote_default_branch(repo_url, env):
+    """获取远程仓库的默认分支名称"""
+    print(f"正在检测远程仓库默认分支: {repo_url}")
+    cmd = ["git", "ls-remote", "--symref", repo_url, "HEAD"]
+    output = run(cmd, env=env, capture_output=True)
+
+    if output:
+        for line in output.splitlines():
+            parts = line.split()
+            if len(parts) >= 2 and parts[0] == "ref:" and "refs/heads/" in parts[1]:
+                branch = parts[1].replace("refs/heads/", "")
+                print(f"检测到默认分支: {branch}")
+                return branch
+
+    print("无法检测到默认分支，回退使用 'main'")
+    return "main"
 
 def build_proxy_url(url, proxy_type, proxy_url):
     """构建代理 URL"""
@@ -47,9 +87,12 @@ def sync_git_file(args, repo_url, env):
     """从 Git 仓库同步单个文件（通过 raw URL 下载）"""
     source_url = args.source_url
     file_path = args.path
-    branch = args.branch or "main"
     dest = args.target_path
-    
+
+    branch = args.branch
+    if not branch:
+        branch = get_remote_default_branch(repo_url, env)
+
     # 构建 raw 文件 URL
     # GitHub: https://github.com/user/repo -> https://raw.githubusercontent.com/user/repo/branch/path
     # GitLab: https://gitlab.com/user/repo -> https://gitlab.com/user/repo/-/raw/branch/path
@@ -152,7 +195,7 @@ def sync_git(args):
         repo_url = repo_url.replace("https://", f"https://{args.auth_token}@")
 
     dest = args.target_path
-    branch = args.branch or "main"
+    branch = args.branch
 
     # 如果指定了 path 且是单文件模式，使用 raw URL 下载
     if args.path and args.single_file:
@@ -197,30 +240,25 @@ def sync_git(args):
             print("提示: 请清空目标目录或指定一个新目录")
             sys.exit(1)
 
+        # 构建 clone 命令
+        clone_cmd = ["git", "clone", "--depth", "1"]
+
+        # 只有指定了分支才加 -b，否则 git 会自动 clone 默认分支
+        if branch:
+            clone_cmd.extend(["-b", branch])
+
         # 稀疏 clone（如果指定了 path）
         if args.path:
-            run([
-                "git", "clone",
-                "--depth", "1",
-                "--filter=blob:none",
-                "--no-checkout",
-                "-b", branch,
-                repo_url,
-                dest
-            ], env=env)
+            clone_cmd.extend(["--filter=blob:none", "--no-checkout", repo_url, dest])
+            run(clone_cmd, env=env)
 
             run(["git", "sparse-checkout", "init", "--cone"], cwd=dest, env=env)
             run(["git", "sparse-checkout", "set", args.path], cwd=dest, env=env)
             run(["git", "checkout"], cwd=dest, env=env)
         else:
             # 普通 clone
-            run([
-                "git", "clone",
-                "--depth", "1",
-                "-b", branch,
-                repo_url,
-                dest
-            ], env=env)
+            clone_cmd.extend([repo_url, dest])
+            run(clone_cmd, env=env)
 
     print("同步完成")
 
@@ -286,7 +324,7 @@ def main():
                         help="源地址（Git仓库URL或文件URL）")
     parser.add_argument("--target-path", required=True, 
                         help="目标路径")
-    parser.add_argument("--branch", default="main", 
+    parser.add_argument("--branch",
                         help="Git 分支名（仅 git 类型有效）")
     parser.add_argument("--path", 
                         help="仅拉取指定文件或目录（仅 git 类型有效）")
