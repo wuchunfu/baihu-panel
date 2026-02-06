@@ -130,7 +130,7 @@ COPY --from=frontend-builder /app/web/dist ./internal/static/dist
 
 # Copy configs and entrypoint
 COPY --from=backend-builder /app/configs ./configs
-COPY docker-entrypoint.sh .
+COPY docker/docker-entrypoint.sh .
 
 # Copy sync.py to /opt
 COPY custom/sync.py /opt/sync.py

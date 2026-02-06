@@ -66,7 +66,7 @@ deps:
 
 # Docker build
 docker-build:
-	docker build -t $(BINARY) .
+	docker build -t $(BINARY) -f docker/Dockerfile .
 
 # Docker run
 docker-run:
@@ -74,11 +74,11 @@ docker-run:
 
 # Docker compose up
 docker-up:
-	docker-compose up -d
+	docker-compose -f docker/docker-compose.yml up -d
 
 # Docker compose down
 docker-down:
-	docker-compose down
+	docker-compose -f docker/docker-compose.yml down
 
 # Help
 help:
