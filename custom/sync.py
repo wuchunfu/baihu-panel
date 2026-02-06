@@ -89,6 +89,11 @@ def sync_git_file(args, repo_url, env):
     file_path = args.path
     dest = args.target_path
 
+    if os.path.isdir(dest) or dest.endswith(os.sep) or (os.altsep and dest.endswith(os.altsep)):
+        filename = os.path.basename(file_path)
+        dest = os.path.join(dest, filename)
+        print(f"检测到目标路径为目录 '{args.target_path}'，自动修正为: '{dest}'")
+
     branch = args.branch
     if not branch:
         branch = get_remote_default_branch(repo_url, env)
