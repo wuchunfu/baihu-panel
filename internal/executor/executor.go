@@ -17,6 +17,8 @@ type Task interface {
 	GetName() string
 	GetCommand() string
 	GetTimeout() int
+	GetWorkDir() string
+	GetEnvs() string
 }
 
 // CronTask 计划任务接口

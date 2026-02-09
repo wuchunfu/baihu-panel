@@ -75,6 +75,8 @@ func (m *CronManager) AddTask(task CronTask) error {
 	cmd := task.GetCommand()
 	name := task.GetName()
 	timeout := task.GetTimeout()
+	workDir := task.GetWorkDir()
+	envs := task.GetEnvs()
 
 	entryID, err := m.cron.AddFunc(task.GetSchedule(), func() {
 		defer func() {
@@ -90,6 +92,8 @@ func (m *CronManager) AddTask(task CronTask) error {
 			Command: cmd,
 			Type:    TaskTypeCron,
 			Timeout: timeout,
+			WorkDir: workDir,
+			Envs:    ParseEnvVars(envs),
 		}
 
 		// 如果有关联的 Scheduler，加入队列执行

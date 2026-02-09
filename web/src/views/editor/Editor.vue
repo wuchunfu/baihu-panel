@@ -78,7 +78,7 @@ async function handleSelect(node: FileNode) {
   selectedPath.value = node.path
   // 更新 URL 使用 query 参数
   router.replace({ name: 'editor', query: { file: node.path } })
-  
+
   if (node.isDir) {
     if (expandedDirs.value.has(node.path)) {
       expandedDirs.value.delete(node.path)
@@ -176,24 +176,24 @@ async function deleteItem() {
 
 async function runScript() {
   if (!selectedFile.value) return
-  
+
   // 获取文件所在目录和文件名
   const parts = selectedFile.value.split('/')
   const fileName = parts.pop() || selectedFile.value
   const dirPath = parts.length > 0 ? parts.join('/') : ''
-  
+
   // 根据文件扩展名确定运行命令
   const ext = fileName.split('.').pop()?.toLowerCase() || ''
   const runner = FILE_RUNNERS[ext]
   const cmd = runner ? `${runner} ${fileName}` : `./${fileName}`
-  
+
   // 构建完整命令
   if (dirPath) {
     runCommand.value = `cd ${PATHS.SCRIPTS_DIR}/${dirPath} && ${cmd}`
   } else {
     runCommand.value = `cd ${PATHS.SCRIPTS_DIR} && ${cmd}`
   }
-  
+
   showTerminalDialog.value = true
   // 等待 DOM 更新后初始化终端，增加延迟确保 Dialog 完全渲染
   await nextTick()
@@ -208,6 +208,21 @@ function closeTerminal() {
   setTimeout(() => {
     terminalRef.value?.dispose()
   }, 300)
+}
+
+async function handleDownload(path: string) {
+  try {
+    const url = api.files.download(path)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = path.split('/').pop() || 'file'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    toast.success('已发起下载')
+  } catch (error: any) {
+    toast.error('下载出错: ' + (error.message || '未知错误'))
+  }
 }
 
 async function handleMove(oldPath: string, newPath: string) {
@@ -362,24 +377,17 @@ onUnmounted(() => {
             <Plus class="h-3 w-3" />
           </Button>
         </div>
-        <input ref="archiveInputRef" type="file" accept=".zip,.tar,.gz,.tgz" class="hidden" @change="handleArchiveUpload" />
+        <input ref="archiveInputRef" type="file" accept=".zip,.tar,.gz,.tgz" class="hidden"
+          @change="handleArchiveUpload" />
         <input ref="filesInputRef" type="file" multiple class="hidden" @change="handleFilesUpload" />
       </div>
       <div class="flex-1 overflow-auto p-1">
         <div v-if="fileTree.length === 0" class="text-xs text-muted-foreground text-center py-4">
           暂无文件
         </div>
-        <FileTreeNode
-          v-for="node in fileTree"
-          :key="node.path"
-          :node="node"
-          :expanded-dirs="expandedDirs"
-          :selected-path="selectedPath"
-          @select="handleSelect"
-          @delete="confirmDelete"
-          @create="handleCreate"
-          @move="handleMove"
-        />
+        <FileTreeNode v-for="node in fileTree" :key="node.path" :node="node" :expanded-dirs="expandedDirs"
+          :selected-path="selectedPath" @select="handleSelect" @delete="confirmDelete" @create="handleCreate"
+          @download-file="handleDownload" @move="handleMove" />
       </div>
     </div>
 
@@ -391,11 +399,13 @@ onUnmounted(() => {
           <span v-if="hasChanges" class="text-orange-500 ml-1">●</span>
         </span>
         <div v-if="selectedFile" class="flex gap-1 shrink-0">
-          <Button v-if="!isEditMode" variant="ghost" size="sm" class="h-6 text-xs gap-1 px-2" @click="isEditMode = true">
+          <Button v-if="!isEditMode" variant="ghost" size="sm" class="h-6 text-xs gap-1 px-2"
+            @click="isEditMode = true">
             <Pencil class="h-3 w-3" /> <span class="hidden sm:inline">编辑</span>
           </Button>
           <template v-else>
-            <Button variant="ghost" size="sm" class="h-6 text-xs gap-1 px-2" @click="isEditMode = false; fileContent = originalContent">
+            <Button variant="ghost" size="sm" class="h-6 text-xs gap-1 px-2"
+              @click="isEditMode = false; fileContent = originalContent">
               <Eye class="h-3 w-3" /> <span class="hidden sm:inline">查看</span>
             </Button>
             <Button variant="ghost" size="sm" class="h-6 text-xs gap-1 px-2" :disabled="!hasChanges" @click="saveFile">
@@ -408,12 +418,8 @@ onUnmounted(() => {
         </div>
       </div>
       <div class="flex-1">
-        <vue-monaco-editor
-          v-if="selectedFile"
-          v-model:value="fileContent"
-          :language="getLanguage(selectedFile)"
-          theme="vs-dark"
-          :options="{
+        <vue-monaco-editor v-if="selectedFile" v-model:value="fileContent" :language="getLanguage(selectedFile)"
+          theme="vs-dark" :options="{
             minimap: { enabled: false },
             fontSize: editorFontSize,
             lineNumbers: 'on',
@@ -429,9 +435,7 @@ onUnmounted(() => {
             insertSpaces: true,
             readOnly: !isEditMode,
             domReadOnly: !isEditMode
-          }"
-          @mount="handleEditorMount"
-        />
+          }" @mount="handleEditorMount" />
         <div v-else class="h-full flex items-center justify-center text-muted-foreground text-sm">
           <span class="lg:hidden">从上方选择文件开始编辑</span>
           <span class="hidden lg:inline">从左侧选择文件开始编辑</span>
@@ -439,7 +443,7 @@ onUnmounted(() => {
       </div>
     </div>
 
-    
+
 
     <!-- 新建对话框 -->
     <Dialog v-model:open="showCreateDialog">
@@ -482,28 +486,28 @@ onUnmounted(() => {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel class="h-7 text-xs">取消</AlertDialogCancel>
-          <AlertDialogAction class="h-7 text-xs bg-destructive text-white hover:bg-destructive/90" @click="deleteItem">删除</AlertDialogAction>
+          <AlertDialogAction class="h-7 text-xs bg-destructive text-white hover:bg-destructive/90" @click="deleteItem">
+            删除
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
 
     <!-- 终端弹窗 -->
     <Dialog v-model:open="showTerminalDialog">
-      <DialogContent class="w-[calc(100%-2rem)] sm:max-w-3xl h-[60vh] sm:h-[70vh] flex flex-col p-0 overflow-hidden !bg-[#1e1e1e] border-[#3c3c3c]" :show-close-button="false">
+      <DialogContent
+        class="w-[calc(100%-2rem)] sm:max-w-3xl h-[60vh] sm:h-[70vh] flex flex-col p-0 overflow-hidden !bg-[#1e1e1e] border-[#3c3c3c]"
+        :show-close-button="false">
         <div class="flex items-center justify-between px-3 sm:px-4 py-2 border-b border-[#3c3c3c]">
           <span class="text-xs sm:text-sm font-medium text-gray-300">运行脚本</span>
-          <Button variant="ghost" size="icon" class="h-6 w-6 text-gray-400 hover:text-white hover:bg-white/10" @click="closeTerminal">
+          <Button variant="ghost" size="icon" class="h-6 w-6 text-gray-400 hover:text-white hover:bg-white/10"
+            @click="closeTerminal">
             <X class="h-4 w-4" />
           </Button>
         </div>
         <div class="flex-1 overflow-hidden">
-          <XTerminal
-            v-if="showTerminalDialog"
-            ref="terminalRef"
-            :font-size="isSmallScreen ? 12 : 13"
-            :initial-command="runCommand"
-            :auto-connect="false"
-          />
+          <XTerminal v-if="showTerminalDialog" ref="terminalRef" :font-size="isSmallScreen ? 12 : 13"
+            :initial-command="runCommand" :auto-connect="false" />
         </div>
       </DialogContent>
     </Dialog>
@@ -511,5 +515,4 @@ onUnmounted(() => {
 </template>
 
 
-<style scoped>
-</style>
+<style scoped></style>

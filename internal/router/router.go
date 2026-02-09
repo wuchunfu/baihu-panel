@@ -155,6 +155,7 @@ func Setup(c *Controllers) *gin.Engine {
 			{
 				files.GET("/tree", c.File.GetFileTree)
 				files.GET("/content", c.File.GetFileContent)
+				files.GET("/download", c.File.DownloadFile)
 				files.POST("/content", c.File.SaveFileContent)
 				files.POST("/create", c.File.CreateFile)
 				files.POST("/delete", c.File.DeleteFile)

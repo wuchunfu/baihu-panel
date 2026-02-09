@@ -68,6 +68,14 @@ func (t *AgentTask) GetTimeout() int {
 	return t.Timeout
 }
 
+func (t *AgentTask) GetWorkDir() string {
+	return t.WorkDir
+}
+
+func (t *AgentTask) GetEnvs() string {
+	return t.Envs
+}
+
 func (t *AgentTask) GetSchedule() string {
 	if t.Schedule != "" {
 		return t.Schedule
@@ -628,7 +636,9 @@ func (a *Agent) updateTasks(tasks []AgentTask) {
 	// 2. 添加或更新任务
 	for id, task := range newTasks {
 		oldTask, exists := a.tasks[id]
-		if !exists || oldTask.Schedule != task.Schedule || oldTask.Command != task.Command || oldTask.Enabled != task.Enabled {
+		if !exists || oldTask.Schedule != task.Schedule || oldTask.Command != task.Command ||
+			oldTask.Enabled != task.Enabled || oldTask.Timeout != task.Timeout ||
+			oldTask.WorkDir != task.WorkDir || oldTask.Envs != task.Envs {
 			if task.Enabled {
 				err := a.cronManager.AddTask(task)
 				if err != nil {

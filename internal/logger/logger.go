@@ -104,6 +104,17 @@ func SetupFileOutput(logDir string) error {
 	return nil
 }
 
+// SetOutput 直接设置 Log 实例
+func SetOutput(l *zap.Logger) {
+	Log = l
+	Sugar = l.Sugar()
+}
+
+// SetSugar 直接设置 Sugar 实例
+func SetSugar(s *zap.SugaredLogger) {
+	Sugar = s
+}
+
 // SetLevel 设置日志级别
 func SetLevel(level string) {
 	switch level {

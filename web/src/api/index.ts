@@ -152,6 +152,7 @@ export const api = {
   files: {
     tree: () => request<FileNode[]>('/files/tree'),
     getContent: (path: string) => request<{ path: string; content: string }>(`/files/content?path=${encodeURIComponent(path)}`),
+    download: (path: string) => `${API_BASE_URL}/files/download?path=${encodeURIComponent(path)}`,
     saveContent: (path: string, content: string) => request('/files/content', { method: 'POST', body: JSON.stringify({ path, content }) }),
     create: (path: string, isDir: boolean) => request('/files/create', { method: 'POST', body: JSON.stringify({ path, isDir }) }),
     delete: (path: string) => request('/files/delete', { method: 'POST', body: JSON.stringify({ path }) }),

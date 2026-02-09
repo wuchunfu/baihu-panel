@@ -74,6 +74,14 @@ func (t *Task) GetTimeout() int {
 	return t.Timeout
 }
 
+func (t *Task) GetWorkDir() string {
+	return t.WorkDir
+}
+
+func (t *Task) GetEnvs() string {
+	return t.Envs
+}
+
 func (t *Task) GetSchedule() string {
 	return t.Schedule
 }

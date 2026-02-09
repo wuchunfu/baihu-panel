@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	internalLogger "github.com/engigu/baihu-panel/internal/logger"
 	"github.com/engigu/baihu-panel/internal/utils"
 )
 
@@ -155,6 +156,7 @@ func cmdStart() {
 	defer unlock()
 
 	initLogger(logFile, true)
+	internalLogger.SetOutput(loggerInstance)
 
 	config := &Config{Interval: 30}
 	if err := loadConfigFile(configFile, config); err != nil {
@@ -220,8 +222,9 @@ func cmdRun() {
 	}
 	defer unlock()
 
-	// 重启模式下只输出到文件（因为是从 daemon 进程 exec 过来的）
-	initLogger(logFile, isRestart)
+	// 前台模式始终输出到终端+文件
+	initLogger(logFile, false)
+	internalLogger.SetOutput(loggerInstance)
 
 	config := &Config{Interval: 30}
 	if err := loadConfigFile(configFile, config); err != nil {

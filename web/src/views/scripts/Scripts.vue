@@ -82,7 +82,7 @@ async function loadTree() {
   loading.value = true
   try {
     fileTree.value = await api.files.tree()
-    
+
     // 仅在首次加载时从 URL 恢复状态
     if (expandedDirs.value.size === 0 && selectedFile.value === null && selectedDir.value === null) {
       // 从 URL 恢复展开的目录
@@ -90,14 +90,14 @@ async function loadTree() {
       if (dirsParam && typeof dirsParam === 'string') {
         dirsParam.split(',').forEach(dir => expandedDirs.value.add(dir))
       }
-      
+
       // 从 URL 恢复选中的文件夹
       const dirParam = route.query.dir
       if (dirParam && typeof dirParam === 'string') {
         selectedDir.value = dirParam
         expandedDirs.value.add(dirParam)
       }
-      
+
       // 从 URL 加载文件
       const fileParam = route.query.file
       if (fileParam && typeof fileParam === 'string') {
@@ -144,13 +144,13 @@ async function handleSelect(node: FileNode) {
     toggleDir(node.path)
     return
   }
-  
+
   if (hasChanges.value) {
     pendingNode.value = node
     showUnsavedDialog.value = true
     return
   }
-  
+
   await selectFile(node)
 }
 
@@ -251,6 +251,22 @@ async function handleDelete() {
   deletePath.value = null
 }
 
+async function handleDownload(path: string) {
+  try {
+    const url = api.files.download(path)
+    // 使用后端直接下载接口
+    const a = document.createElement('a')
+    a.href = url
+    a.download = path.split('/').pop() || 'file'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    toast.success('已发起下载')
+  } catch (error: any) {
+    toast.error('下载出错: ' + (error.message || '未知错误'))
+  }
+}
+
 onMounted(loadTree)
 </script>
 
@@ -272,20 +288,14 @@ onMounted(loadTree)
           </Button>
         </div>
       </div>
-      
+
       <div class="flex-1 overflow-auto p-1">
         <div v-if="fileTree.length === 0" class="text-xs text-muted-foreground text-center py-4">
           暂无文件
         </div>
-        <FileTreeNode
-          v-for="node in fileTree"
-          :key="node.path"
-          :node="node"
-          :expanded-dirs="expandedDirs"
-          :selected-path="selectedFile || selectedDir"
-          @select="handleSelect"
-          @delete="confirmDeleteFile"
-        />
+        <FileTreeNode v-for="node in fileTree" :key="node.path" :node="node" :expanded-dirs="expandedDirs"
+          :selected-path="selectedFile || selectedDir" @select="handleSelect" @delete="confirmDeleteFile"
+          @download-file="handleDownload" />
       </div>
     </div>
 
@@ -296,24 +306,15 @@ onMounted(loadTree)
           <span class="text-xs font-medium truncate">{{ selectedFile || '未选择文件' }}</span>
           <span v-if="hasChanges" class="text-xs text-orange-500 shrink-0">● 未保存</span>
         </div>
-        <Button 
-          v-if="selectedFile" 
-          size="sm" 
-          class="h-6 text-xs gap-1 shrink-0" 
-          :disabled="!hasChanges || saving"
-          @click="saveFile"
-        >
+        <Button v-if="selectedFile" size="sm" class="h-6 text-xs gap-1 shrink-0" :disabled="!hasChanges || saving"
+          @click="saveFile">
           <Save class="h-3 w-3" />
           <span class="hidden sm:inline">{{ saving ? '保存中...' : '保存' }}</span>
         </Button>
       </div>
-      
+
       <div class="flex-1">
-        <VueMonacoEditor
-          v-if="selectedFile"
-          v-model:value="fileContent"
-          :language="editorLanguage"
-          theme="vs-dark"
+        <VueMonacoEditor v-if="selectedFile" v-model:value="fileContent" :language="editorLanguage" theme="vs-dark"
           :options="{
             minimap: { enabled: false },
             fontSize: 13,
@@ -322,10 +323,7 @@ onMounted(loadTree)
             automaticLayout: true,
             tabSize: 2,
             wordWrap: 'on'
-          }"
-          style="height: 100%"
-          @mount="handleEditorMount"
-        />
+          }" style="height: 100%" @mount="handleEditorMount" />
         <div v-else class="h-full flex items-center justify-center text-muted-foreground text-sm">
           选择一个文件开始编辑
         </div>
@@ -344,12 +342,8 @@ onMounted(loadTree)
           <div v-if="selectedDir" class="text-xs text-muted-foreground">
             位置: {{ selectedDir }}/
           </div>
-          <Input 
-            v-model="createName" 
-            class="h-8 text-xs" 
-            :placeholder="createType === 'file' ? 'example.js' : 'folder-name'"
-            @keyup.enter="createItem"
-          />
+          <Input v-model="createName" class="h-8 text-xs"
+            :placeholder="createType === 'file' ? 'example.js' : 'folder-name'" @keyup.enter="createItem" />
           <div v-if="createName" class="text-xs text-muted-foreground">
             完整路径: {{ createFullPath }}
           </div>
@@ -369,7 +363,8 @@ onMounted(loadTree)
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel class="h-7 text-xs">取消</AlertDialogCancel>
-          <AlertDialogAction class="h-7 text-xs bg-destructive text-white hover:bg-destructive/90" @click="handleDelete">删除</AlertDialogAction>
+          <AlertDialogAction class="h-7 text-xs bg-destructive text-white hover:bg-destructive/90"
+            @click="handleDelete">删除</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

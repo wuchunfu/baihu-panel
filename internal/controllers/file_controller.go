@@ -347,3 +347,29 @@ func (fc *FileController) UploadFiles(c *gin.Context) {
 
 	utils.SuccessMsg(c, "上传成功")
 }
+
+func (fc *FileController) DownloadFile(c *gin.Context) {
+	filePath := c.Query("path")
+	if filePath == "" {
+		utils.BadRequest(c, "path参数必填")
+		return
+	}
+
+	fullPath := filepath.Join(fc.workDir, filepath.Clean(filePath))
+	if !strings.HasPrefix(fullPath, fc.workDir) {
+		utils.Forbidden(c, "访问被拒绝")
+		return
+	}
+
+	info, err := os.Stat(fullPath)
+	if err != nil || info.IsDir() {
+		utils.NotFound(c, "文件不存在")
+		return
+	}
+
+	c.Header("Content-Description", "File Transfer")
+	c.Header("Content-Transfer-Encoding", "binary")
+	c.Header("Content-Disposition", "attachment; filename="+filepath.Base(fullPath))
+	c.Header("Content-Type", "application/octet-stream")
+	c.File(fullPath)
+}
