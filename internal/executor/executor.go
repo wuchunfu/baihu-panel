@@ -5,9 +5,12 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 
+	"github.com/creack/pty"
+	"github.com/engigu/baihu-panel/internal/logger"
 	"github.com/engigu/baihu-panel/internal/utils"
 )
 
@@ -107,28 +110,101 @@ func ExecuteWithHooks(ctx context.Context, req Request, stdout, stderr io.Writer
 	if len(req.Envs) > 0 {
 		cmd.Env = append(cmd.Env, req.Envs...)
 	}
+	// 强制注入终端环境标识及禁用输出缓冲的标志
+	cmd.Env = append(cmd.Env,
+		"TERM=xterm",
+		"PYTHONUNBUFFERED=1",
+		"NODE_NO_WARNINGS=1",
+	)
 
-	cmd.Stdout = stdout
-	cmd.Stderr = stderr
+	var pipeWriter *os.File
+	var ptyFile *os.File
+	var copyDone chan struct{}
+	var err error
 
-	// 使用 cmd.Start() + Wait() 以便在后台处理心跳
-	err := cmd.Start()
-	if err != nil {
-		// Start 失败的处理
-		end := time.Now()
-		result := &Result{
-			Status:    "failed",
-			Duration:  end.Sub(start).Milliseconds(),
-			ExitCode:  1,
-			StartTime: start, // 修正为 start
-			EndTime:   end,
+	var started bool
+	// 尝试开启 PTY 模式（Unix/macOS 且输出合并时）
+	if runtime.GOOS != "windows" && stdout != nil && (stdout == stderr || stdout == io.Discard) {
+		// 强制注入终端环境标识及禁用输出缓冲的标志，确保 PTY 模式下最佳实时性能
+		cmd.Env = append(cmd.Env,
+			"TERM=xterm",
+			"PYTHONUNBUFFERED=1",
+			"NODE_NO_WARNINGS=1",
+		)
+		f, ptyErr := pty.Start(cmd)
+		if ptyErr == nil {
+			logger.Infof("[Executor] 任务 #%d 启动于 PTY 模式", logID)
+			ptyFile = f
+			started = true
+			copyDone = make(chan struct{})
+			go func() {
+				defer close(copyDone)
+				// io.Copy 对于 PTY 来说是最稳健且即时的流式拷贝
+				io.Copy(stdout, f)
+				f.Close()
+			}()
+		} else {
+			logger.Errorf("[Executor] 任务 #%d PTY 启动失败: %v", logID, ptyErr)
 		}
-		// 执行后钩子
-		if hooks != nil {
-			result.Output += "\n[System Error] " + err.Error()
-			hooks.PostExecute(ctx, logID, result)
+	}
+
+	if !started {
+		// 如果 stdout 和 stderr 指针不一致，但在逻辑上我们知道它们是同一个 MultiWriter，
+		// 这里会显示为 Pipe 模式。
+		if stdout != stderr && stdout != io.Discard {
+			logger.Debugf("[Executor] 任务 #%d stdout (%p) and stderr (%p) are different, falling back to Pipe mode.", logID, stdout, stderr)
 		}
-		return result, err
+		logger.Infof("[Executor] 任务 #%d 启动于 Pipe 模式", logID)
+		if stdout != nil && stdout == stderr {
+			pr, pw, err := os.Pipe()
+			if err == nil {
+				cmd.Stdout = pw
+				cmd.Stderr = pw
+				pipeWriter = pw
+				copyDone = make(chan struct{})
+				go func() {
+					io.Copy(stdout, pr)
+					pr.Close()
+					close(copyDone)
+				}()
+			} else {
+				cmd.Stdout = stdout
+				cmd.Stderr = stderr
+			}
+		} else {
+			cmd.Stdout = stdout
+			cmd.Stderr = stderr
+		}
+
+		// 使用 cmd.Start() + Wait() 以便在后台处理心跳
+		err = cmd.Start()
+		if err != nil {
+			if pipeWriter != nil {
+				pipeWriter.Close()
+			}
+			// Start 失败的处理
+			end := time.Now()
+			result := &Result{
+				Status:    "failed",
+				Duration:  end.Sub(start).Milliseconds(),
+				ExitCode:  1,
+				StartTime: start, // 修正为 start
+				EndTime:   end,
+			}
+			// 执行后钩子
+			if hooks != nil {
+				result.Output += "\n[System Error] " + err.Error()
+				hooks.PostExecute(ctx, logID, result)
+			}
+			return result, err
+		}
+
+		// 在父进程中关闭写端，这样子进程退出后 pr 才会收到 EOF
+		if pipeWriter != nil {
+			pipeWriter.Close()
+		}
+	} else {
+		// PTY 模式下 cmd.Start() 已经在 pty.Start(cmd) 中调用过了
 	}
 
 	// 启动心跳协程
@@ -152,6 +228,16 @@ func ExecuteWithHooks(ctx context.Context, req Request, stdout, stderr io.Writer
 	// 等待命令完成
 	err = cmd.Wait()
 	close(done) // 停止心跳
+
+	// PTY 模式下需要显式关闭
+	if ptyFile != nil {
+		ptyFile.Close()
+	}
+
+	// 等待日志复制完成
+	if copyDone != nil {
+		<-copyDone
+	}
 
 	end := time.Now()
 

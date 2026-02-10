@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"sync"
+	"unicode/utf8"
 
 	"github.com/engigu/baihu-panel/internal/utils"
 )
@@ -55,6 +56,7 @@ type TinyLog struct {
 	path        string
 	writer      *bufio.Writer
 	subscribers []chan []byte
+	remainder   []byte // Leftover bytes from previous write (partial multi-byte characters)
 	closed      bool
 }
 
@@ -85,17 +87,46 @@ func (l *TinyLog) Write(p []byte) (n int, err error) {
 		return 0, os.ErrClosed
 	}
 
-	// 1. Convert to UTF-8 if necessary (common on Windows)
-	text := utils.ToUTF8(p)
+	// 1. Combine with remainder from previous call
+	originalInputLen := len(p)
+	payload := p
+	if len(l.remainder) > 0 {
+		payload = append(l.remainder, p...)
+		l.remainder = nil
+	}
+
+	// 2. Identify trailing partial UTF-8 sequence
+	lastSafe := len(payload)
+	// UTF-8 characters are max 4 bytes. Check the last few bytes.
+	for i := len(payload) - 1; i >= 0 && i >= len(payload)-4; i-- {
+		if utf8.RuneStart(payload[i]) {
+			if !utf8.FullRune(payload[i:]) {
+				// Indeed a partial rune at the end
+				lastSafe = i
+				l.remainder = make([]byte, len(payload)-i)
+				copy(l.remainder, payload[i:])
+			}
+			break
+		}
+	}
+
+	// If the entire payload is partial and not longer than a max UTF-8 char,
+	// keep it all for the next call.
+	if lastSafe == 0 && len(l.remainder) > 0 {
+		return originalInputLen, nil
+	}
+
+	// 3. Convert only the complete part to UTF-8
+	text := utils.ToUTF8(payload[:lastSafe])
 	data := []byte(text)
 
-	// 2. Write to file buffer
+	// 4. Write to file buffer
 	_, err = l.writer.Write(data)
 	if err != nil {
 		return 0, err
 	}
 
-	// 3. Broadcast to subscribers
+	// 5. Broadcast to subscribers
 	if len(l.subscribers) > 0 {
 		for _, ch := range l.subscribers {
 			select {
@@ -106,7 +137,7 @@ func (l *TinyLog) Write(p []byte) (n int, err error) {
 		}
 	}
 
-	return len(p), nil
+	return originalInputLen, nil
 }
 
 // Subscribe returns a channel that receives log chunks in real-time
@@ -140,6 +171,22 @@ func (l *TinyLog) Close() error {
 
 	if l.closed {
 		return nil
+	}
+
+	// Process any remaining bytes
+	if len(l.remainder) > 0 {
+		text := utils.ToUTF8(l.remainder)
+		data := []byte(text)
+		_, _ = l.writer.Write(data)
+
+		// Also notify subscribers of the last bit
+		for _, ch := range l.subscribers {
+			select {
+			case ch <- data:
+			default:
+			}
+		}
+		l.remainder = nil
 	}
 
 	// Flush buffer to file

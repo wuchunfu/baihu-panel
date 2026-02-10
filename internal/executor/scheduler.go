@@ -341,16 +341,24 @@ func (s *Scheduler) executeTask(req *ExecutionRequest) (*ExecutionResult, error)
 	var combinedBuf safeBuffer
 	var stdoutWriter, stderrWriter io.Writer
 
-	if stdout != nil {
-		stdoutWriter = io.MultiWriter(&combinedBuf, stdout)
+	if stdout != nil && stdout == stderr {
+		// 如果 stdout 和 stderr 是同一个对象，合并成一个 MultiWriter
+		// 这样后面 ExecuteWithHooks 才能识别出它们是同一个，从而开启 PTY 模式
+		mw := io.MultiWriter(&combinedBuf, stdout)
+		stdoutWriter = mw
+		stderrWriter = mw
 	} else {
-		stdoutWriter = &combinedBuf
-	}
+		if stdout != nil {
+			stdoutWriter = io.MultiWriter(&combinedBuf, stdout)
+		} else {
+			stdoutWriter = &combinedBuf
+		}
 
-	if stderr != nil {
-		stderrWriter = io.MultiWriter(&combinedBuf, stderr)
-	} else {
-		stderrWriter = &combinedBuf
+		if stderr != nil {
+			stderrWriter = io.MultiWriter(&combinedBuf, stderr)
+		} else {
+			stderrWriter = &combinedBuf
+		}
 	}
 
 	// 3. 实际开始执行事件 (经过队列和速率限制之后)
