@@ -50,6 +50,10 @@ func NotFound(c *gin.Context, msg string) {
 	Error(c, 404, msg)
 }
 
+func TooManyRequests(c *gin.Context, msg string) {
+	Error(c, 429, msg)
+}
+
 func ServerError(c *gin.Context, msg string) {
 	Error(c, 500, msg)
 }

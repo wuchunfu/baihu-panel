@@ -2,6 +2,7 @@ package services
 
 import (
 	"github.com/engigu/baihu-panel/internal/logger"
+	"github.com/engigu/baihu-panel/internal/utils"
 )
 
 type InitService struct {
@@ -40,6 +41,12 @@ func (s *InitService) initializeAdmin(userService *UserService) {
 		return
 	}
 
-	userService.CreateUser("admin", "123456", "admin@local", "admin")
-	logger.Info("管理员账号创建成功: admin / 123456")
+	password := utils.RandomString(12)
+	userService.CreateUser("admin", password, "admin@local", "admin")
+	logger.Infof("--------------------------------------------------")
+	logger.Infof("管理员账号创建成功:")
+	logger.Infof("用户名: admin")
+	logger.Infof("密  码: %s", password)
+	logger.Infof("请妥善保管您的密码，并登录后及时修改。")
+	logger.Infof("--------------------------------------------------")
 }

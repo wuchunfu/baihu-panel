@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"strconv"
+	"sync"
+	"time"
 
 	"github.com/engigu/baihu-panel/internal/constant"
 	"github.com/engigu/baihu-panel/internal/middleware"
@@ -16,6 +18,13 @@ type AuthController struct {
 	settingsService *services.SettingsService
 	loginLogService *services.LoginLogService
 }
+
+type loginAttempt struct {
+	Count       int
+	LastAttempt time.Time
+}
+
+var loginAttempts sync.Map
 
 func NewAuthController(userService *services.UserService, settingsService *services.SettingsService, loginLogService *services.LoginLogService) *AuthController {
 	return &AuthController{
@@ -39,13 +48,36 @@ func (ac *AuthController) Login(c *gin.Context) {
 		return
 	}
 
+	// 暴力破解防御
+	if val, ok := loginAttempts.Load(ip); ok {
+		attempt := val.(*loginAttempt)
+		if attempt.Count >= 5 && time.Since(attempt.LastAttempt) < time.Minute {
+			ac.loginLogService.Create(req.Username, ip, userAgent, "failed", "尝试次数过多，请一分钟后再试")
+			utils.TooManyRequests(c, "尝试次数过多，请一分钟后再试")
+			return
+		}
+		// 如果距离上次尝试已超过一分钟，重置计数
+		if time.Since(attempt.LastAttempt) >= time.Minute {
+			loginAttempts.Delete(ip)
+		}
+	}
+
 	user := ac.userService.GetUserByUsername(req.Username)
 	if user == nil || !ac.userService.ValidatePassword(user, req.Password) {
+		// 记录失败尝试
+		val, _ := loginAttempts.LoadOrStore(ip, &loginAttempt{Count: 0, LastAttempt: time.Now()})
+		attempt := val.(*loginAttempt)
+		attempt.Count++
+		attempt.LastAttempt = time.Now()
+
 		// 记录登录失败日志
 		ac.loginLogService.Create(req.Username, ip, userAgent, "failed", "用户名或密码错误")
 		utils.Unauthorized(c, "用户名或密码错误")
 		return
 	}
+
+	// 登录成功，清除尝试记录
+	loginAttempts.Delete(ip)
 
 	// 获取 cookie 过期天数
 	expireDays := 7
