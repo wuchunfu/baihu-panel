@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import FileTreeNode from '@/components/FileTreeNode.vue'
 import XTerminal from '@/components/XTerminal.vue'
-import { Plus, Save, Play, RefreshCw, Upload, FolderUp, Pencil, Eye, X } from 'lucide-vue-next'
+import { Plus, Save, Play, RefreshCw, Upload, FolderUp, Pencil, Eye, X, Download, Trash2, Edit3 } from 'lucide-vue-next'
 import { api, type FileNode } from '@/api'
 import { toast } from 'vue-sonner'
 import { PATHS, FILE_RUNNERS } from '@/constants'
@@ -36,6 +36,10 @@ const deleteTargetPath = ref('')
 const archiveInputRef = ref<HTMLInputElement | null>(null)
 const filesInputRef = ref<HTMLInputElement | null>(null)
 const uploadTargetDir = ref('')
+
+const showRenameDialog = ref(false)
+const renamePath = ref('')
+const newName = ref('')
 
 const isEditMode = ref(false)
 const hasChanges = computed(() => fileContent.value !== originalContent.value)
@@ -184,6 +188,34 @@ async function deleteItem() {
   showDeleteDialog.value = false
 }
 
+function openRenameDialog(path: string) {
+  renamePath.value = path
+  newName.value = path.split('/').pop() || ''
+  showRenameDialog.value = true
+}
+
+async function renameItem() {
+  if (!newName.value.trim()) {
+    toast.error('请输入名称')
+    return
+  }
+  const parts = renamePath.value.split('/')
+  parts[parts.length - 1] = newName.value
+  const newPath = parts.join('/')
+
+  if (newPath === renamePath.value) {
+    showRenameDialog.value = false
+    return
+  }
+
+  try {
+    await handleMove(renamePath.value, newPath, '重命名成功')
+    showRenameDialog.value = false
+  } catch {
+    // Error handled in handleMove
+  }
+}
+
 async function runScript() {
   if (!selectedFile.value) return
 
@@ -236,10 +268,10 @@ async function handleDownload(path: string) {
   }
 }
 
-async function handleMove(oldPath: string, newPath: string) {
+async function handleMove(oldPath: string, newPath: string, successMsg = '移动成功') {
   try {
     await api.files.rename(oldPath, newPath)
-    toast.success('移动成功')
+    toast.success(successMsg)
     if (selectedFile.value === oldPath) {
       selectedFile.value = newPath
       selectedPath.value = newPath
@@ -401,7 +433,7 @@ onUnmounted(() => {
         </div>
         <FileTreeNode v-for="node in fileTree" :key="node.path" :node="node" :expanded-dirs="expandedDirs"
           :selected-path="selectedPath" @select="handleSelect" @delete="confirmDelete" @create="handleCreate"
-          @download-file="handleDownload" @move="handleMove" />
+          @download-file="handleDownload" @move="handleMove" @rename="openRenameDialog" />
       </div>
     </div>
 
@@ -409,26 +441,39 @@ onUnmounted(() => {
     <div class="flex-1 min-h-[300px] border rounded-md flex flex-col overflow-hidden">
       <div class="flex items-center justify-between p-2 border-b gap-2">
         <span class="text-xs font-medium truncate flex-1 min-w-0">
-          {{ selectedFile || '选择文件进行编辑' }}
+          {{ selectedPath || '选择文件或文件夹进行操作' }}
           <span v-if="hasChanges" class="text-orange-500 ml-1">●</span>
         </span>
-        <div v-if="selectedFile" class="flex gap-1 shrink-0">
-          <Button v-if="!isEditMode" variant="ghost" size="sm" class="h-6 text-xs gap-1 px-2"
-            @click="isEditMode = true">
-            <Pencil class="h-3 w-3" /> <span class="hidden sm:inline">编辑</span>
+        <div v-if="selectedPath" class="flex gap-1 shrink-0">
+          <Button variant="ghost" size="sm" class="h-6 text-xs gap-1 px-2" @click="openRenameDialog(selectedPath)">
+            <Edit3 class="h-3 w-3" /> <span class="hidden sm:inline">重命名</span>
           </Button>
-          <template v-else>
-            <Button variant="ghost" size="sm" class="h-6 text-xs gap-1 px-2"
-              @click="isEditMode = false; fileContent = originalContent">
-              <Eye class="h-3 w-3" /> <span class="hidden sm:inline">查看</span>
+          <Button variant="ghost" size="sm" class="h-6 text-xs gap-1 px-2" @click="confirmDelete(selectedPath)">
+            <Trash2 class="h-3 w-3 text-destructive" /> <span class="hidden sm:inline">删除</span>
+          </Button>
+
+          <template v-if="selectedFile">
+            <Button variant="ghost" size="sm" class="h-6 text-xs gap-1 px-2" @click="handleDownload(selectedFile)">
+              <Download class="h-3 w-3" /> <span class="hidden sm:inline">下载</span>
             </Button>
-            <Button variant="ghost" size="sm" class="h-6 text-xs gap-1 px-2" :disabled="!hasChanges" @click="saveFile">
-              <Save class="h-3 w-3" /> <span class="hidden sm:inline">保存</span>
+            <Button v-if="!isEditMode" variant="ghost" size="sm" class="h-6 text-xs gap-1 px-2"
+              @click="isEditMode = true">
+              <Pencil class="h-3 w-3" /> <span class="hidden sm:inline">编辑</span>
+            </Button>
+            <template v-else>
+              <Button variant="ghost" size="sm" class="h-6 text-xs gap-1 px-2"
+                @click="isEditMode = false; fileContent = originalContent">
+                <Eye class="h-3 w-3" /> <span class="hidden sm:inline">查看</span>
+              </Button>
+              <Button variant="ghost" size="sm" class="h-6 text-xs gap-1 px-2" :disabled="!hasChanges"
+                @click="saveFile">
+                <Save class="h-3 w-3" /> <span class="hidden sm:inline">保存</span>
+              </Button>
+            </template>
+            <Button variant="ghost" size="sm" class="h-6 text-xs gap-1 px-2" @click="runScript">
+              <Play class="h-3 w-3" /> <span class="hidden sm:inline">运行</span>
             </Button>
           </template>
-          <Button variant="ghost" size="sm" class="h-6 text-xs gap-1 px-2" @click="runScript">
-            <Play class="h-3 w-3" /> <span class="hidden sm:inline">运行</span>
-          </Button>
         </div>
       </div>
       <div class="flex-1">
@@ -506,6 +551,25 @@ onUnmounted(() => {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+
+    <!-- 重命名对话框 -->
+    <Dialog v-model:open="showRenameDialog">
+      <DialogContent class="max-w-xs" @open-auto-focus.prevent>
+        <DialogHeader>
+          <DialogTitle class="text-sm">重命名</DialogTitle>
+        </DialogHeader>
+        <div class="space-y-3 py-2">
+          <div class="space-y-1">
+            <Label class="text-xs">新名称</Label>
+            <Input v-model="newName" class="h-8 text-xs" placeholder="new_name.sh" @keyup.enter="renameItem" />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" size="sm" class="h-7 text-xs" @click="showRenameDialog = false">取消</Button>
+          <Button size="sm" class="h-7 text-xs" @click="renameItem">确定</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
 
     <!-- 终端弹窗 -->
     <Dialog v-model:open="showTerminalDialog">

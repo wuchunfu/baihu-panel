@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Folder, File, ChevronRight, ChevronDown, Trash2, Plus, Download } from 'lucide-vue-next'
-import { Button } from '@/components/ui/button'
+import { Folder, File, ChevronRight, ChevronDown } from 'lucide-vue-next'
 import type { FileNode } from '@/api'
 
 defineOptions({
@@ -18,9 +17,9 @@ const props = defineProps<{
 const emit = defineEmits<{
   select: [node: FileNode]
   delete: [path: string]
-  'download-file': [path: string]
   create: [parentDir: string]
   move: [oldPath: string, newPath: string]
+  rename: [path: string]
 }>()
 
 const depth = computed(() => props.depth ?? 0)
@@ -32,20 +31,7 @@ function handleSelect() {
   emit('select', props.node)
 }
 
-function handleDelete(e: Event) {
-  e.stopPropagation()
-  emit('delete', props.node.path)
-}
 
-function handleDownloadClick(e: Event) {
-  e.stopPropagation()
-  emit('download-file', props.node.path)
-}
-
-function handleCreate(e: Event) {
-  e.stopPropagation()
-  emit('create', props.node.path)
-}
 
 function handleDragStart(e: DragEvent) {
   e.dataTransfer?.setData('text/plain', props.node.path)
@@ -99,23 +85,12 @@ function handleDrop(e: DragEvent) {
       <Folder v-if="node.isDir" class="h-3 w-3 text-yellow-500 flex-shrink-0" />
       <File v-else class="h-3 w-3 text-blue-500 flex-shrink-0" />
       <span class="truncate flex-1">{{ node.name }}</span>
-      <Button v-if="node.isDir" variant="ghost" size="icon" class="h-5 w-5 opacity-0 group-hover:opacity-100"
-        @click="handleCreate">
-        <Plus class="h-3 w-3" />
-      </Button>
-      <Button v-if="!node.isDir" variant="ghost" size="icon" class="h-5 w-5 opacity-0 group-hover:opacity-100"
-        @click="handleDownloadClick">
-        <Download class="h-3 w-3" />
-      </Button>
-      <Button variant="ghost" size="icon" class="h-5 w-5 opacity-0 group-hover:opacity-100" @click="handleDelete">
-        <Trash2 class="h-3 w-3 text-destructive" />
-      </Button>
     </div>
     <template v-if="node.isDir && isExpanded && node.children">
       <FileTreeNode v-for="child in node.children" :key="child.path" :node="child" :expanded-dirs="expandedDirs"
         :selected-path="selectedPath" :depth="depth + 1" @select="$emit('select', $event)"
-        @delete="$emit('delete', $event)" @download-file="$emit('download-file', $event)"
-        @create="$emit('create', $event)" @move="(oldPath, newPath) => $emit('move', oldPath, newPath)" />
+        @create="$emit('create', $event)" @move="(oldPath, newPath) => $emit('move', oldPath, newPath)"
+        @rename="$emit('rename', $event)" />
     </template>
   </div>
 </template>
