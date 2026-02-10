@@ -7,6 +7,7 @@ import (
 
 	"github.com/engigu/baihu-panel/internal/constant"
 	"github.com/engigu/baihu-panel/internal/middleware"
+	"github.com/engigu/baihu-panel/internal/models/vo"
 	"github.com/engigu/baihu-panel/internal/services"
 	"github.com/engigu/baihu-panel/internal/utils"
 
@@ -135,5 +136,5 @@ func (ac *AuthController) Register(c *gin.Context) {
 	}
 
 	user := ac.userService.CreateUser(req.Username, req.Email, req.Password, "user")
-	utils.Success(c, user)
+	utils.Success(c, vo.ToUserVO(user))
 }

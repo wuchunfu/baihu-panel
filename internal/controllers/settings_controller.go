@@ -12,6 +12,7 @@ import (
 	"github.com/engigu/baihu-panel/internal/constant"
 	"github.com/engigu/baihu-panel/internal/database"
 	"github.com/engigu/baihu-panel/internal/models"
+	"github.com/engigu/baihu-panel/internal/models/vo"
 	"github.com/engigu/baihu-panel/internal/services"
 	"github.com/engigu/baihu-panel/internal/services/tasks"
 	"github.com/engigu/baihu-panel/internal/utils"
@@ -256,7 +257,7 @@ func (sc *SettingsController) GetLoginLogs(c *gin.Context) {
 	}
 
 	utils.Success(c, gin.H{
-		"data":      logs,
+		"data":      vo.ToLoginLogVOListFromModels(logs),
 		"total":     total,
 		"page":      page,
 		"page_size": pageSize,

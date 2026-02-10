@@ -3,6 +3,7 @@ package controllers
 import (
 	"strconv"
 
+	"github.com/engigu/baihu-panel/internal/models/vo"
 	"github.com/engigu/baihu-panel/internal/services"
 	"github.com/engigu/baihu-panel/internal/utils"
 
@@ -38,7 +39,7 @@ func (ec *EnvController) CreateEnvVar(c *gin.Context) {
 	}
 
 	envVar := ec.envService.CreateEnvVar(req.Name, req.Value, req.Remark, hidden, userID)
-	utils.Success(c, envVar)
+	utils.Success(c, vo.ToEnvVO(envVar))
 }
 
 func (ec *EnvController) GetEnvVars(c *gin.Context) {
@@ -46,13 +47,13 @@ func (ec *EnvController) GetEnvVars(c *gin.Context) {
 	p := utils.ParsePagination(c)
 	name := c.DefaultQuery("name", "")
 	envVars, total := ec.envService.GetEnvVarsWithPagination(userID, name, p.Page, p.PageSize)
-	utils.PaginatedResponse(c, envVars, total, p)
+	utils.PaginatedResponse(c, vo.ToEnvVOListFromModels(envVars), total, p)
 }
 
 func (ec *EnvController) GetAllEnvVars(c *gin.Context) {
 	userID := 1
 	envVars := ec.envService.GetEnvVarsByUserID(userID)
-	utils.Success(c, envVars)
+	utils.Success(c, vo.ToEnvVOListFromModels(envVars))
 }
 
 func (ec *EnvController) GetEnvVar(c *gin.Context) {
@@ -68,7 +69,7 @@ func (ec *EnvController) GetEnvVar(c *gin.Context) {
 		return
 	}
 
-	utils.Success(c, envVar)
+	utils.Success(c, vo.ToEnvVO(envVar))
 }
 
 func (ec *EnvController) UpdateEnvVar(c *gin.Context) {
@@ -107,7 +108,7 @@ func (ec *EnvController) UpdateEnvVar(c *gin.Context) {
 		return
 	}
 
-	utils.Success(c, envVar)
+	utils.Success(c, vo.ToEnvVO(envVar))
 }
 
 func (ec *EnvController) DeleteEnvVar(c *gin.Context) {

@@ -10,6 +10,7 @@ import (
 	"github.com/engigu/baihu-panel/internal/constant"
 	"github.com/engigu/baihu-panel/internal/logger"
 	"github.com/engigu/baihu-panel/internal/models"
+	"github.com/engigu/baihu-panel/internal/models/vo"
 	"github.com/engigu/baihu-panel/internal/services"
 	"github.com/engigu/baihu-panel/internal/services/tasks"
 	"github.com/engigu/baihu-panel/internal/utils"
@@ -43,7 +44,7 @@ func NewAgentController(settingsService *services.SettingsService) *AgentControl
 // List 获取 Agent 列表
 func (c *AgentController) List(ctx *gin.Context) {
 	agents := c.agentService.List()
-	utils.Success(ctx, agents)
+	utils.Success(ctx, vo.ToAgentVOListFromModels(agents))
 }
 
 // Update 更新 Agent
@@ -644,7 +645,7 @@ func (c *AgentController) NotifyTaskUpdate(agentID uint) {
 // ListTokens 获取令牌列表
 func (c *AgentController) ListTokens(ctx *gin.Context) {
 	tokens := c.agentService.ListTokens()
-	utils.Success(ctx, tokens)
+	utils.Success(ctx, vo.ToAgentTokenVOListFromModels(tokens))
 }
 
 // CreateToken 创建令牌
@@ -676,7 +677,7 @@ func (c *AgentController) CreateToken(ctx *gin.Context) {
 		return
 	}
 
-	utils.Success(ctx, token)
+	utils.Success(ctx, vo.ToAgentTokenVO(token))
 }
 
 // DeleteToken 删除令牌

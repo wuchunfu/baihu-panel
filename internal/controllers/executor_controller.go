@@ -3,6 +3,7 @@ package controllers
 import (
 	"strconv"
 
+	"github.com/engigu/baihu-panel/internal/models/vo"
 	"github.com/engigu/baihu-panel/internal/services/tasks"
 	"github.com/engigu/baihu-panel/internal/utils"
 
@@ -24,8 +25,21 @@ func (ec *ExecutorController) ExecuteTask(c *gin.Context) {
 		return
 	}
 
-	result := ec.executorService.ExecuteTask(id)
-	utils.Success(c, result)
+	var req struct {
+		Envs map[string]string `json:"envs"`
+	}
+	// 尝试绑定 JSON 体，但不强制要求
+	_ = c.ShouldBindJSON(&req)
+
+	var extraEnvs []string
+	if req.Envs != nil {
+		for k, v := range req.Envs {
+			extraEnvs = append(extraEnvs, k+"="+v)
+		}
+	}
+
+	result := ec.executorService.ExecuteTask(id, extraEnvs)
+	utils.Success(c, vo.ToExecutionResultVO(result))
 }
 
 func (ec *ExecutorController) ExecuteCommand(c *gin.Context) {
@@ -39,7 +53,7 @@ func (ec *ExecutorController) ExecuteCommand(c *gin.Context) {
 	}
 
 	result := ec.executorService.ExecuteCommand(req.Command)
-	utils.Success(c, result)
+	utils.Success(c, vo.ToExecutionResultVO(result))
 }
 
 func (ec *ExecutorController) GetLastResults(c *gin.Context) {
@@ -51,5 +65,5 @@ func (ec *ExecutorController) GetLastResults(c *gin.Context) {
 	}
 
 	results := ec.executorService.GetLastResults(count)
-	utils.Success(c, results)
+	utils.Success(c, vo.ToExecutionResultVOList(results))
 }

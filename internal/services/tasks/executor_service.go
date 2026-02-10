@@ -437,7 +437,7 @@ func (es *ExecutorService) Reload() {
 }
 
 // ExecuteTask executes a task by ID（同步执行，供 API 调用）
-func (es *ExecutorService) ExecuteTask(taskID int) *executor.ExecutionResult {
+func (es *ExecutorService) ExecuteTask(taskID int, extraEnvs []string) *executor.ExecutionResult {
 	task := es.taskService.GetTaskByID(taskID)
 	if task == nil {
 		return &executor.ExecutionResult{
@@ -460,12 +460,17 @@ func (es *ExecutorService) ExecuteTask(taskID int) *executor.ExecutionResult {
 		}
 	}
 
+	envs := es.loadEnvVars(task.Envs)
+	if len(extraEnvs) > 0 {
+		envs = append(envs, extraEnvs...)
+	}
+
 	req := &executor.ExecutionRequest{
 		TaskID:  fmt.Sprintf("%d", task.ID),
 		Name:    task.Name,
 		Command: task.Command,
 		WorkDir: task.WorkDir,
-		Envs:    es.loadEnvVars(task.Envs),
+		Envs:    envs,
 		Timeout: task.Timeout,
 		Type:    executor.TaskTypeManual,
 	}

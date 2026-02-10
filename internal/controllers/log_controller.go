@@ -5,6 +5,7 @@ import (
 
 	"github.com/engigu/baihu-panel/internal/database"
 	"github.com/engigu/baihu-panel/internal/models"
+	"github.com/engigu/baihu-panel/internal/models/vo"
 	"github.com/engigu/baihu-panel/internal/utils"
 
 	"github.com/gin-gonic/gin"
@@ -14,19 +15,6 @@ type LogController struct{}
 
 func NewLogController() *LogController {
 	return &LogController{}
-}
-
-type TaskLogResponse struct {
-	ID        uint              `json:"id"`
-	TaskID    uint              `json:"task_id"`
-	TaskName  string            `json:"task_name"`
-	TaskType  string            `json:"task_type"`
-	Command   string            `json:"command"`
-	Status    string            `json:"status"`
-	Duration  int64             `json:"duration"`
-	StartTime *models.LocalTime `json:"start_time"`
-	EndTime   *models.LocalTime `json:"end_time"`
-	CreatedAt models.LocalTime  `json:"created_at"`
 }
 
 func (lc *LogController) GetLogs(c *gin.Context) {
@@ -49,7 +37,7 @@ func (lc *LogController) GetLogs(c *gin.Context) {
 		if len(taskIDs) > 0 {
 			query = query.Where("task_id IN ?", taskIDs)
 		} else {
-			utils.PaginatedResponse(c, []TaskLogResponse{}, 0, p)
+			utils.PaginatedResponse(c, []vo.TaskLogVO{}, 0, p)
 			return
 		}
 	}
@@ -69,18 +57,19 @@ func (lc *LogController) GetLogs(c *gin.Context) {
 		taskMap[t.ID] = t
 	}
 
-	result := make([]TaskLogResponse, len(logs))
+	result := make([]vo.TaskLogVO, len(logs))
 	for i, log := range logs {
 		task := taskMap[log.TaskID]
 		taskType := task.Type
 		if taskType == "" {
 			taskType = "task"
 		}
-		result[i] = TaskLogResponse{
+		result[i] = vo.TaskLogVO{
 			ID:        log.ID,
 			TaskID:    log.TaskID,
 			TaskName:  task.Name,
 			TaskType:  taskType,
+			AgentID:   log.AgentID,
 			Command:   log.Command,
 			Status:    log.Status,
 			Duration:  log.Duration,
@@ -106,15 +95,5 @@ func (lc *LogController) GetLogDetail(c *gin.Context) {
 		return
 	}
 
-	utils.Success(c, gin.H{
-		"id":         log.ID,
-		"task_id":    log.TaskID,
-		"command":    log.Command,
-		"output":     log.Output,
-		"status":     log.Status,
-		"duration":   log.Duration,
-		"start_time": log.StartTime,
-		"end_time":   log.EndTime,
-		"created_at": log.CreatedAt,
-	})
+	utils.Success(c, vo.ToTaskLogVO(&log))
 }

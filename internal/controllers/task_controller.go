@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/engigu/baihu-panel/internal/constant"
+	"github.com/engigu/baihu-panel/internal/models/vo"
 	"github.com/engigu/baihu-panel/internal/services"
 	"github.com/engigu/baihu-panel/internal/services/tasks"
 	"github.com/engigu/baihu-panel/internal/utils"
@@ -94,7 +95,7 @@ func (tc *TaskController) CreateTask(c *gin.Context) {
 		tc.executorService.AddCronTask(task)
 	}
 
-	utils.Success(c, task)
+	utils.Success(c, vo.ToTaskVO(task))
 }
 
 func (tc *TaskController) GetTasks(c *gin.Context) {
@@ -111,7 +112,7 @@ func (tc *TaskController) GetTasks(c *gin.Context) {
 	}
 
 	tasks, total := tc.taskService.GetTasksWithPagination(p.Page, p.PageSize, name, agentID)
-	utils.PaginatedResponse(c, tasks, total, p)
+	utils.PaginatedResponse(c, vo.ToTaskVOListFromModels(tasks), total, p)
 }
 
 func (tc *TaskController) GetTask(c *gin.Context) {
@@ -127,7 +128,7 @@ func (tc *TaskController) GetTask(c *gin.Context) {
 		return
 	}
 
-	utils.Success(c, task)
+	utils.Success(c, vo.ToTaskVO(task))
 }
 
 func (tc *TaskController) UpdateTask(c *gin.Context) {
@@ -204,7 +205,7 @@ func (tc *TaskController) UpdateTask(c *gin.Context) {
 		}
 	}
 
-	utils.Success(c, task)
+	utils.Success(c, vo.ToTaskVO(task))
 }
 
 func (tc *TaskController) DeleteTask(c *gin.Context) {

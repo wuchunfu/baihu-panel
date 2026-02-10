@@ -3,6 +3,7 @@ package controllers
 import (
 	"strconv"
 
+	"github.com/engigu/baihu-panel/internal/models/vo"
 	"github.com/engigu/baihu-panel/internal/services"
 	"github.com/engigu/baihu-panel/internal/utils"
 
@@ -31,13 +32,17 @@ func (sc *ScriptController) CreateScript(c *gin.Context) {
 	}
 
 	script := sc.scriptService.CreateScript(req.Name, req.Content, userID)
-	utils.Success(c, script)
+	utils.Success(c, vo.ToScriptVO(script))
 }
 
 func (sc *ScriptController) GetScripts(c *gin.Context) {
 	userID := 1
 	scripts := sc.scriptService.GetScriptsByUserID(userID)
-	utils.Success(c, scripts)
+	vos := vo.ToScriptVOListFromModels(scripts)
+	for i := range vos {
+		vos[i].Content = "" // 列表不返回内容
+	}
+	utils.Success(c, vos)
 }
 
 func (sc *ScriptController) GetScript(c *gin.Context) {
@@ -53,7 +58,7 @@ func (sc *ScriptController) GetScript(c *gin.Context) {
 		return
 	}
 
-	utils.Success(c, script)
+	utils.Success(c, vo.ToScriptVO(script))
 }
 
 func (sc *ScriptController) UpdateScript(c *gin.Context) {
@@ -79,7 +84,7 @@ func (sc *ScriptController) UpdateScript(c *gin.Context) {
 		return
 	}
 
-	utils.Success(c, script)
+	utils.Success(c, vo.ToScriptVO(script))
 }
 
 func (sc *ScriptController) DeleteScript(c *gin.Context) {

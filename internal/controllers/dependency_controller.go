@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/engigu/baihu-panel/internal/models"
+	"github.com/engigu/baihu-panel/internal/models/vo"
 	"github.com/engigu/baihu-panel/internal/services"
 	"github.com/engigu/baihu-panel/internal/utils"
 
@@ -29,7 +30,11 @@ func (c *DependencyController) List(ctx *gin.Context) {
 		utils.ServerError(ctx, "获取依赖列表失败")
 		return
 	}
-	utils.Success(ctx, deps)
+	vos := vo.ToDependencyVOListFromModels(deps)
+	for i := range vos {
+		vos[i].Log = "" // 列表不返回日志
+	}
+	utils.Success(ctx, vos)
 }
 
 // Create 添加依赖
@@ -63,7 +68,7 @@ func (c *DependencyController) Create(ctx *gin.Context) {
 		return
 	}
 
-	utils.Success(ctx, dep)
+	utils.Success(ctx, vo.ToDependencyVO(dep))
 }
 
 // Delete 删除依赖
