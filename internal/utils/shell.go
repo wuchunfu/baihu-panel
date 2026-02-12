@@ -14,18 +14,34 @@ func GetShell() (shell string, args []string) {
 
 	// 优先使用环境变量中的 SHELL
 	if envShell := os.Getenv("SHELL"); envShell != "" {
-		return envShell, []string{}
+		if _, err := os.Stat(envShell); err == nil {
+			return envShell, []string{}
+		}
 	}
 
-	// 尝试按优先级查找可用的 shell
-	shells := []string{"/bin/bash", "/bin/zsh", "/bin/sh"}
+	// 尝试在 PATH 中查找 bash
+	if path, err := exec.LookPath("bash"); err == nil {
+		return path, []string{}
+	}
+
+	// 尝试在 PATH 中查找 zsh
+	if path, err := exec.LookPath("zsh"); err == nil {
+		return path, []string{}
+	}
+
+	// 尝试在 PATH 中查找 sh
+	if path, err := exec.LookPath("sh"); err == nil {
+		return path, []string{}
+	}
+
+	// 最后回退到最常见的硬编码路径
+	shells := []string{"/bin/bash", "/usr/bin/bash", "/bin/sh"}
 	for _, sh := range shells {
 		if _, err := os.Stat(sh); err == nil {
 			return sh, []string{}
 		}
 	}
 
-	// 最后回退到 sh（应该总是存在）
 	return "sh", []string{}
 }
 

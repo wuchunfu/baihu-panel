@@ -41,6 +41,9 @@ FROM --platform=$BUILDPLATFORM golang:1.25 AS backend-builder
 ARG TARGETOS
 ARG TARGETARCH
 
+# Install UPX
+RUN apt-get update && apt-get install -y upx-ucl && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # Copy build info
@@ -53,7 +56,7 @@ RUN go env -w GOPROXY=https://goproxy.cn,direct && go mod download
 # Copy backend source
 COPY . .
 
-# Copy frontend dist
+# Copy frontend dist (needed for embedding)
 COPY --from=frontend-builder /app/web/dist ./internal/static/dist
 
 # Build Go binary
@@ -61,12 +64,16 @@ RUN VERSION_VAL=$(cat /build-info/version.txt) && \
     BUILD_TIME_VAL=$(cat /build-info/build_time.txt) && \
     CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build -ldflags="-s -w -X github.com/engigu/baihu-panel/internal/constant.Version=${VERSION_VAL} -X 'github.com/engigu/baihu-panel/internal/constant.BuildTime=${BUILD_TIME_VAL}'" \
-    -o baihu .
+    -o baihu . && \
+    upx --best --lzma baihu
 
 # ================================
 # Stage 3: Build Agent (all platforms)
 # ================================
 FROM --platform=$BUILDPLATFORM golang:1.25 AS agent-builder
+
+# Install UPX
+RUN apt-get update && apt-get install -y upx-ucl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -84,27 +91,23 @@ COPY agent/ ./agent/
 # Build agent for all platforms and package as tar.gz
 WORKDIR /app/agent
 
-# Build agent for all platforms and package as tar.gz
 RUN VERSION_VAL=$(cat /build-info/version.txt) && \
     BUILD_TIME_VAL=$(cat /build-info/build_time.txt) && \
     LDFLAGS="-s -w -X 'main.Version=${VERSION_VAL}' -X 'main.BuildTime=${BUILD_TIME_VAL}'" && \
     mkdir -p /opt/agent && \
     echo "${VERSION_VAL}" > /opt/agent/version.txt && \
-    # Linux amd64
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o baihu-agent . && \
-    tar -czvf /opt/agent/baihu-agent-linux-amd64.tar.gz baihu-agent config.example.ini && rm baihu-agent && \
-    # Linux arm64
-    CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o baihu-agent . && \
-    tar -czvf /opt/agent/baihu-agent-linux-arm64.tar.gz baihu-agent config.example.ini && rm baihu-agent && \
-    # macOS amd64
-    CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o baihu-agent . && \
-    tar -czvf /opt/agent/baihu-agent-darwin-amd64.tar.gz baihu-agent config.example.ini && rm baihu-agent && \
-    # macOS arm64
-    CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o baihu-agent . && \
-    tar -czvf /opt/agent/baihu-agent-darwin-arm64.tar.gz baihu-agent config.example.ini && rm baihu-agent && \
-    # Windows amd64 (暂时注释)
-    # CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o baihu-agent.exe . && \
-    # tar -czvf /opt/agent/baihu-agent-windows-amd64.tar.gz baihu-agent.exe config.example.ini && rm baihu-agent.exe && \
+    # Helper to build and compress
+    build_agent() { \
+        local os=$1; local arch=$2; local suffix=$3; \
+        CGO_ENABLED=0 GOOS=$os GOARCH=$arch go build -ldflags="${LDFLAGS}" -o baihu-agent$suffix . && \
+        upx --best --lzma baihu-agent$suffix && \
+        tar -czvf /opt/agent/baihu-agent-$os-$arch.tar.gz baihu-agent$suffix config.example.ini && \
+        rm baihu-agent$suffix; \
+    } && \
+    build_agent linux amd64 "" && \
+    build_agent linux arm64 "" && \
+    build_agent darwin amd64 "" && \
+    build_agent darwin arm64 "" && \
     echo "Agent build completed for all platforms"
 # ================================
 # Stage 4: Final image
@@ -132,9 +135,6 @@ WORKDIR /app
 # Copy Go binary
 COPY --from=backend-builder /app/baihu .
 
-# Copy frontend dist folder
-COPY --from=frontend-builder /app/web/dist ./internal/static/dist
-
 # Copy configs and entrypoint
 COPY --from=backend-builder /app/configs ./configs
 COPY docker/docker-entrypoint.sh .
@@ -147,7 +147,6 @@ COPY --from=agent-builder /opt/agent /opt/agent
 
 RUN chmod +x /opt/sync.py \
     && chmod +x docker-entrypoint.sh \
-    && touch "dont-not-delete-anythings" \
     && echo "set encoding=utf-8" >> /etc/vim/vimrc
 
 EXPOSE 8052

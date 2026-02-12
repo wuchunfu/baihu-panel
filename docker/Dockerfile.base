@@ -10,20 +10,16 @@ RUN sed -i 's@deb.debian.org@mirrors.tuna.tsinghua.edu.cn@g' /etc/apt/sources.li
     && ln -sf /usr/share/zoneinfo/${TZ} /etc/localtime \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
-         tzdata git gcc curl wget vim htop ca-certificates rsync \
-         build-essential libssl-dev zlib1g-dev libbz2-dev \
+         tzdata git curl wget vim htop ca-certificates rsync \
+    && BUILD_DEPS="gcc build-essential libssl-dev zlib1g-dev libbz2-dev \
          libreadline-dev libsqlite3-dev libncursesw5-dev \
-         xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# 安装 mise
-RUN curl https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh
-
-# 使用 mise 安装 Node.js 和 Python
-ENV MISE_DATA_DIR=/opt/mise-base
-ENV MISE_CONFIG_DIR=/opt/mise-base
-ENV MISE_HTTP_TIMEOUT=300
-# 使用镜像源加速 Python 编译下载
-ENV PYTHON_BUILD_MIRROR_URL=https://pyenv.pages.dev/api/mirror/binaries
-RUN (mise use -g node@22 python@3.12 || mise use -g node@22 python@3.12) \
-    && mise prune -- -f
+         xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev" \
+    && apt-get install -y --no-install-recommends $BUILD_DEPS \
+    && curl https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh \
+    && MISE_DATA_DIR=/opt/mise-base MISE_CONFIG_DIR=/opt/mise-base MISE_HTTP_TIMEOUT=300 \
+       PYTHON_BUILD_MIRROR_URL=https://pyenv.pages.dev/api/mirror/binaries \
+       (mise use -g node@22 python@3.12 || mise use -g node@22 python@3.12) \
+    && mise prune -- -f \
+    && apt-get purge -y --auto-remove $BUILD_DEPS \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /root/.cache/mise /root/.cache/pip /opt/mise-base/cache/*
