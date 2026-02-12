@@ -112,6 +112,8 @@ FROM ghcr.io/engigu/baihu:${BASE_TAG}
 ENV TZ=Asia/Shanghai
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
+ENV MISE_DATA_DIR=/app/envs/mise
+ENV MISE_CONFIG_DIR=/app/envs/mise
 ENV PATH="/app/envs/mise/shims:/app/envs/mise/bin:$PATH"
 
 # # 安装必要系统工具 + Node + Python
