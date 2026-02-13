@@ -30,7 +30,21 @@ func (s *InitService) Initialize() *UserService {
 	// 创建管理员账号
 	s.initializeAdmin(userService)
 
+	// 初始化语言环境
+	s.initializeLanguages()
+
 	return userService
+}
+
+// initializeLanguages 初始化同步语言环境
+func (s *InitService) initializeLanguages() {
+	logger.Info("开始初始化编程语言环境...")
+	miseService := NewMiseService()
+	if err := miseService.Sync(); err != nil {
+		logger.Errorf("初始化同步语言环境失败: %v", err)
+	} else {
+		logger.Info("初始化语言环境同步完成")
+	}
 }
 
 // initializeAdmin 创建管理员账号
