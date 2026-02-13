@@ -141,11 +141,17 @@
 
 | 标签 (Tag) | 基础镜像 | 说明 |
 | :--- | :--- | :--- |
-| `latest` | Debian 12 | 默认版本，平衡稳定与兼容性 |
-| `latest-alpine` | Alpine | 极简版本，镜像体积最小 |
-| `latest-debian13` | Debian 13 | 尝鲜版本，基于 Debian Trixie |
+| `latest` | Debian 12 | 默认版本，集成 Python 3.13 与 Node.js 23 |
 
-> **提示**：下方部署示例默认使用 `latest` 标签，如需换用 Alpine 或 Debian 13 版，只需将 `latest` 替换为 `latest-alpine` 或 `latest-debian13` 即可。
+> **警告**：**架构升级破坏性变更**
+> 
+> 本版本（2026.02.13+）对底层运行时环境进行了彻底重构，弃用了原有的静态 Python/Node 环境，转为使用 **Mise** 进行动态版本管理。
+> 
+> 1. **不再提供 Alpine 镜像**：由于 glibc 兼容性问题，Mise 无法在 Alpine 上完美运行，因此暂时取消 Alpine 镜像支持。
+> 2. **环境数据不兼容**：如果您是从旧版本升级上来，原有的 Python/Node 环境数据将无法迁移。升级后您需要：
+>    - 清空或备份原有的 `envs/` 挂载目录
+>    - 启动新容器，让系统自动初始化新的 Mise 环境
+>    - 在面板中重新安装所需的语言和依赖
 
 
 <details>
