@@ -12,6 +12,7 @@ import DirTreeSelect from '@/components/DirTreeSelect.vue'
 import { Plus, ChevronDown, X, Search, Check, ChevronsUpDown, Loader2, AlertCircle } from 'lucide-vue-next'
 import { cn } from '@/lib/utils'
 import { api, type Task, type EnvVar, type Agent, type MiseLanguage } from '@/api'
+import { TRIGGER_TYPE } from '@/constants'
 import { toast } from 'vue-sonner'
 
 const props = defineProps<{
@@ -44,6 +45,7 @@ const allEnvVars = ref<EnvVar[]>([])
 const allAgents = ref<Agent[]>([])
 const selectedEnvIds = ref<number[]>([])
 const selectedAgentId = ref<string>('local')
+const selectedTriggerType = ref<string>('cron')
 const envSearchQuery = ref('')
 // 为每个执行位置保存独立的工作目录配置
 const workDirCache = ref<Record<string, string>>({})
@@ -254,6 +256,8 @@ watch(() => props.open, async (val) => {
     // 解析 Agent 和工作目录
     const agentId = props.task?.agent_id ? String(props.task.agent_id) : 'local'
     selectedAgentId.value = agentId
+    // 解析触发类型
+    selectedTriggerType.value = props.task?.trigger_type || TRIGGER_TYPE.CRON
     // 初始化工作目录缓存，将当前任务的工作目录保存到对应的执行位置
     workDirCache.value = {
       [agentId]: props.task?.work_dir || ''
@@ -298,6 +302,7 @@ async function save() {
     form.value.clean_config = cleanConfig.value
     form.value.envs = selectedEnvIds.value.join(',')
     form.value.type = 'task'
+    form.value.trigger_type = selectedTriggerType.value
     form.value.agent_id = selectedAgentId.value === 'local' ? null : Number(selectedAgentId.value)
 
     // 保存语言环境配置
@@ -369,6 +374,21 @@ async function save() {
                 <SelectItem v-for="agent in onlineAgents" :key="agent.id" :value="String(agent.id)">
                   {{ agent.name }} ({{ agent.status === 'online' ? '在线' : '离线' }})
                 </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-3">
+          <Label class="sm:text-right text-sm">触发类型</Label>
+          <div class="sm:col-span-3">
+            <Select v-model="selectedTriggerType">
+              <SelectTrigger class="h-8 text-sm">
+                <SelectValue placeholder="定时触发" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem :value="TRIGGER_TYPE.CRON">定时触发</SelectItem>
+                <SelectItem :value="TRIGGER_TYPE.BAIHU_STARTUP">服务启动时触发</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -11,7 +11,7 @@ import { api, type Task, type Agent } from '@/api'
 import { toast } from 'vue-sonner'
 import { useSiteSettings } from '@/composables/useSiteSettings'
 import { useRouter, useRoute } from 'vue-router'
-import { TASK_TYPE, AGENT_STATUS } from '@/constants'
+import { TASK_TYPE, AGENT_STATUS, TRIGGER_TYPE } from '@/constants'
 import TextOverflow from '@/components/TextOverflow.vue'
 
 const router = useRouter()
@@ -261,8 +261,10 @@ watch(() => route.query.agent_id, (newVal) => {
             class="w-32 sm:flex-1 shrink-0 sm:shrink text-muted-foreground truncate text-xs bg-muted/40 px-2 py-1 rounded hidden sm:block">
   <TextOverflow :text="task.command" :title="task.type === TASK_TYPE.REPO ? '同步地址' : '执行命令'" />
 </code>
-          <code class="w-36 shrink-0 text-muted-foreground text-xs bg-muted/40 px-2 py-1 rounded hidden md:block">{{ task.schedule
-          }}</code>
+          <div class="w-36 shrink-0 hidden md:flex flex-col items-start justify-center gap-1 overflow-hidden">
+            <span v-if="task.trigger_type === TRIGGER_TYPE.BAIHU_STARTUP" class="text-[10px] leading-none bg-primary/10 text-primary px-1.5 py-1 rounded whitespace-nowrap border border-primary/20">服务启动时</span>
+            <code v-else-if="task.schedule" class="text-muted-foreground text-xs bg-muted/40 px-1.5 py-0.5 rounded truncate max-w-full" :title="task.schedule">{{ task.schedule }}</code>
+          </div>
           <span class="w-40 shrink-0 text-muted-foreground text-xs hidden lg:block">{{ task.last_run || '-' }}</span>
           <span class="w-40 shrink-0 text-muted-foreground text-xs hidden lg:block">{{ task.next_run || '-' }}</span>
           <span class="w-8 sm:w-12 flex justify-center shrink-0 cursor-pointer group"

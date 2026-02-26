@@ -78,6 +78,10 @@ const (
 	TaskTypeNormal = "task"
 	TaskTypeRepo   = "repo"
 
+	// 触发类型
+	TriggerTypeCron         = "cron"
+	TriggerTypeBaihuStartup = "baihu_startup"
+
 	// Agent 状态
 	AgentStatusOnline  = "online"
 	AgentStatusOffline = "offline"

@@ -227,6 +227,32 @@ func (s *BackupService) Restore(zipPath string) error {
 	})
 }
 
+func restoreStreamBatch[T any](tx *gorm.DB, decoder *json.Decoder) error {
+	batchSize := 1000
+	var batch []*T
+
+	for decoder.More() {
+		var m T
+		if err := decoder.Decode(&m); err != nil {
+			return err
+		}
+		batch = append(batch, &m)
+
+		if len(batch) >= batchSize {
+			if err := tx.CreateInBatches(batch, batchSize).Error; err != nil {
+				return err
+			}
+			batch = nil // reset batch
+		}
+	}
+
+	if len(batch) > 0 {
+		return tx.CreateInBatches(batch, len(batch)).Error
+	}
+
+	return nil
+}
+
 func (s *BackupService) restoreFromZipFile(tx *gorm.DB, f *zip.File, filename string) error {
 	rc, err := f.Open()
 	if err != nil {
@@ -254,60 +280,30 @@ func (s *BackupService) restoreFromZipFile(tx *gorm.DB, f *zip.File, filename st
 		return fmt.Errorf("invalid json format: expected %s", filename)
 	}
 
-	batchSize := 1000
-	var batch []any
-
-	// 根据文件名确定模型类型
-	getModel := func() any {
-		switch filename {
-		case "tasks.json":
-			return &models.Task{}
-		case "task_logs.json":
-			return &models.TaskLog{}
-		case "envs.json":
-			return &models.EnvironmentVariable{}
-		case "scripts.json":
-			return &models.Script{}
-		case "send_stats.json":
-			return &models.SendStats{}
-		case "login_logs.json":
-			return &models.LoginLog{}
-		case "agents.json":
-			return &models.Agent{}
-		case "tokens.json":
-			return &models.AgentToken{}
-		case "languages.json":
-			return &models.Language{}
-		case "deps.json":
-			return &models.Dependency{}
-		default:
-			return nil
-		}
+	switch filename {
+	case "tasks.json":
+		return restoreStreamBatch[models.Task](tx, decoder)
+	case "task_logs.json":
+		return restoreStreamBatch[models.TaskLog](tx, decoder)
+	case "envs.json":
+		return restoreStreamBatch[models.EnvironmentVariable](tx, decoder)
+	case "scripts.json":
+		return restoreStreamBatch[models.Script](tx, decoder)
+	case "send_stats.json":
+		return restoreStreamBatch[models.SendStats](tx, decoder)
+	case "login_logs.json":
+		return restoreStreamBatch[models.LoginLog](tx, decoder)
+	case "agents.json":
+		return restoreStreamBatch[models.Agent](tx, decoder)
+	case "tokens.json":
+		return restoreStreamBatch[models.AgentToken](tx, decoder)
+	case "languages.json":
+		return restoreStreamBatch[models.Language](tx, decoder)
+	case "deps.json":
+		return restoreStreamBatch[models.Dependency](tx, decoder)
+	default:
+		return nil
 	}
-
-	for decoder.More() {
-		m := getModel()
-		if m == nil {
-			break
-		}
-		if err := decoder.Decode(m); err != nil {
-			return err
-		}
-		batch = append(batch, m)
-
-		if len(batch) >= batchSize {
-			if err := tx.CreateInBatches(batch, batchSize).Error; err != nil {
-				return err
-			}
-			batch = nil
-		}
-	}
-
-	if len(batch) > 0 {
-		return tx.CreateInBatches(batch, batchSize).Error
-	}
-
-	return nil
 }
 
 // insertRecords, restoreFromData 方法已合并入 restoreFromZipFile，此处删除冗余方法

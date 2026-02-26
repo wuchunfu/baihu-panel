@@ -11,6 +11,7 @@ type TaskVO struct {
 	Name        string              `json:"name"`
 	Command     string              `json:"command"`
 	Type        string              `json:"type"`
+	TriggerType string              `json:"trigger_type"`
 	Config      string              `json:"config"`
 	Schedule    string              `json:"schedule"`
 	Timeout     int                 `json:"timeout"`
@@ -36,6 +37,7 @@ func ToTaskVO(task *models.Task) *TaskVO {
 		Name:        task.Name,
 		Command:     task.Command,
 		Type:        task.Type,
+		TriggerType: task.TriggerType,
 		Config:      task.Config,
 		Schedule:    task.Schedule,
 		Timeout:     task.Timeout,

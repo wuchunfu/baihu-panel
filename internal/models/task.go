@@ -38,6 +38,7 @@ type Task struct {
 	Name        string              `json:"name" gorm:"size:255;not null"`
 	Command     string              `json:"command" gorm:"type:text"`                   // 普通任务的命令
 	Type        string              `json:"type" gorm:"size:20;default:'task'"`         // 任务类型: constant.TaskTypeNormal, constant.TaskTypeRepo
+	TriggerType string              `json:"trigger_type" gorm:"size:25;default:'cron'"` // 触发类型: constant.TriggerTypeCron, constant.TriggerTypeBaihuStartup
 	Config      string              `json:"config" gorm:"type:text"`                    // 配置 JSON（仓库同步配置等）
 	Schedule    string              `json:"schedule" gorm:"size:100"`                   // cron 表达式
 	Timeout     int                 `json:"timeout" gorm:"default:30"`                  // 超时时间（分钟），默认30分钟

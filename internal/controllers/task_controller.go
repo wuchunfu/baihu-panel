@@ -56,13 +56,14 @@ func (tc *TaskController) CreateTask(c *gin.Context) {
 		Command     string              `json:"command"`
 		Type        string              `json:"type"`
 		Config      string              `json:"config"`
-		Schedule    string              `json:"schedule" binding:"required"`
+		Schedule    string              `json:"schedule"`
 		Timeout     int                 `json:"timeout"`
 		WorkDir     string              `json:"work_dir"`
 		CleanConfig string              `json:"clean_config"`
 		Envs        string              `json:"envs"`
 		Languages   []map[string]string `json:"languages"`
 		AgentID     *uint               `json:"agent_id"`
+		TriggerType string              `json:"trigger_type"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -76,9 +77,11 @@ func (tc *TaskController) CreateTask(c *gin.Context) {
 		return
 	}
 
-	if err := tc.executorService.ValidateCron(req.Schedule); err != nil {
-		utils.BadRequest(c, "无效的cron表达式: "+err.Error())
-		return
+	if req.Schedule != "" {
+		if err := tc.executorService.ValidateCron(req.Schedule); err != nil {
+			utils.BadRequest(c, "无效的cron表达式: "+err.Error())
+			return
+		}
 	}
 
 	// 转换为绝对路径（Agent 任务保持原样）
@@ -87,7 +90,7 @@ func (tc *TaskController) CreateTask(c *gin.Context) {
 		workDir = resolveWorkDir(req.WorkDir)
 	}
 
-	task := tc.taskService.CreateTask(req.Name, req.Command, req.Schedule, req.Timeout, workDir, req.CleanConfig, req.Envs, req.Type, req.Config, req.AgentID, req.Languages)
+	task := tc.taskService.CreateTask(req.Name, req.Command, req.Schedule, req.Timeout, workDir, req.CleanConfig, req.Envs, req.Type, req.Config, req.AgentID, req.Languages, req.TriggerType)
 
 	// 如果是 Agent 任务，通知 Agent；否则添加到本地 cron
 	if task.AgentID != nil && *task.AgentID > 0 {
@@ -159,6 +162,7 @@ func (tc *TaskController) UpdateTask(c *gin.Context) {
 		Enabled     bool                `json:"enabled"`
 		Languages   []map[string]string `json:"languages"`
 		AgentID     *uint               `json:"agent_id"`
+		TriggerType string              `json:"trigger_type"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -179,7 +183,7 @@ func (tc *TaskController) UpdateTask(c *gin.Context) {
 		workDir = resolveWorkDir(req.WorkDir)
 	}
 
-	task := tc.taskService.UpdateTask(id, req.Name, req.Command, req.Schedule, req.Timeout, workDir, req.CleanConfig, req.Envs, req.Enabled, req.Type, req.Config, req.AgentID, req.Languages)
+	task := tc.taskService.UpdateTask(id, req.Name, req.Command, req.Schedule, req.Timeout, workDir, req.CleanConfig, req.Envs, req.Enabled, req.Type, req.Config, req.AgentID, req.Languages, req.TriggerType)
 	if task == nil {
 		utils.NotFound(c, "任务不存在")
 		return

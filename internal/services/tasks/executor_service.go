@@ -416,6 +416,10 @@ func (es *ExecutorService) StopCron() {
 
 // AddCronTask 添加计划任务
 func (es *ExecutorService) AddCronTask(task *models.Task) error {
+	if task.TriggerType != constant.TriggerTypeCron {
+		es.RemoveCronTask(task.ID) // 如果不是cron类型，确保从调度器移除
+		return nil
+	}
 	return es.cronManager.AddTask(task)
 }
 
@@ -439,8 +443,19 @@ func (es *ExecutorService) loadCronTasks() {
 	tasks := es.taskService.GetTasks()
 	count := 0
 	for _, task := range tasks {
-		// 只调度本地任务（agent_id 为空或 0）
-		if task.Enabled && (task.AgentID == nil || *task.AgentID == 0) {
+		if !task.Enabled {
+			continue
+		}
+
+		if task.TriggerType == constant.TriggerTypeBaihuStartup {
+			go func(t models.Task) {
+				// 延迟一点时间再触发，确保系统完全启动
+				time.Sleep(3 * time.Second)
+				logger.Infof("[Executor] 触发开机服务启动任务 #%d: %s", t.ID, t.Name)
+				es.ExecuteTask(int(t.ID), nil)
+			}(task)
+		} else if task.TriggerType == constant.TriggerTypeCron && task.Schedule != "" && (task.AgentID == nil || *task.AgentID == 0) {
+			// 只调度本地任务（agent_id 为空或 0）的定时任务
 			err := es.cronManager.AddTask(&task)
 			if err != nil {
 				continue

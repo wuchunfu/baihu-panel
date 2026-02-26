@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"github.com/engigu/baihu-panel/internal/constant"
 	"github.com/engigu/baihu-panel/internal/database"
 	"github.com/engigu/baihu-panel/internal/models"
 )
@@ -11,14 +12,18 @@ func NewTaskService() *TaskService {
 	return &TaskService{}
 }
 
-func (ts *TaskService) CreateTask(name, command, schedule string, timeout int, workDir, cleanConfig, envs, taskType, config string, agentID *uint, languages []map[string]string) *models.Task {
+func (ts *TaskService) CreateTask(name, command, schedule string, timeout int, workDir, cleanConfig, envs, taskType, config string, agentID *uint, languages []map[string]string, triggerType string) *models.Task {
 	if taskType == "" {
 		taskType = "task"
+	}
+	if triggerType == "" {
+		triggerType = constant.TriggerTypeCron
 	}
 	task := &models.Task{
 		Name:        name,
 		Command:     command,
 		Type:        taskType,
+		TriggerType: triggerType,
 		Config:      config,
 		Schedule:    schedule,
 		Timeout:     timeout,
@@ -28,6 +33,9 @@ func (ts *TaskService) CreateTask(name, command, schedule string, timeout int, w
 		Languages:   languages,
 		AgentID:     agentID,
 		Enabled:     true,
+	}
+	if triggerType != constant.TriggerTypeCron {
+		task.NextRun = nil
 	}
 	database.DB.Create(task)
 	return task
@@ -66,7 +74,7 @@ func (ts *TaskService) GetTaskByID(id int) *models.Task {
 	return &task
 }
 
-func (ts *TaskService) UpdateTask(id int, name, command, schedule string, timeout int, workDir, cleanConfig, envs string, enabled bool, taskType, config string, agentID *uint, languages []map[string]string) *models.Task {
+func (ts *TaskService) UpdateTask(id int, name, command, schedule string, timeout int, workDir, cleanConfig, envs string, enabled bool, taskType, config string, agentID *uint, languages []map[string]string, triggerType string) *models.Task {
 	var task models.Task
 	if err := database.DB.First(&task, id).Error; err != nil {
 		return nil
@@ -83,6 +91,12 @@ func (ts *TaskService) UpdateTask(id int, name, command, schedule string, timeou
 	task.Languages = languages
 	if taskType != "" {
 		task.Type = taskType
+	}
+	if triggerType != "" {
+		task.TriggerType = triggerType
+	}
+	if task.TriggerType != constant.TriggerTypeCron {
+		task.NextRun = nil
 	}
 	task.Config = config
 	database.DB.Save(&task)

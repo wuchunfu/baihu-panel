@@ -34,6 +34,12 @@ export const TASK_TYPE = {
   REPO: 'repo',
 } as const
 
+// 触发类型
+export const TRIGGER_TYPE = {
+  CRON: 'cron',
+  BAIHU_STARTUP: 'baihu_startup',
+} as const
+
 // Agent 状态
 export const AGENT_STATUS = {
   ONLINE: 'online',

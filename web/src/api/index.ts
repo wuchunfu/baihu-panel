@@ -266,6 +266,7 @@ export interface Task {
   name: string
   command: string
   type: string
+  trigger_type: string
   config: string
   schedule: string
   timeout: number
