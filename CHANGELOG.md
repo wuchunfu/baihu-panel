@@ -6,7 +6,7 @@
 [部署文档](https://github.com/engigu/baihu-panel?tab=readme-ov-file#%E5%BF%AB%E9%80%9F%E9%83%A8%E7%BD%B2)
 
 ### 🚀 方式二：单文件部署
-从当前 Release 的附件中下载对应架构的单文件可执行程序（`baihu-linux-amd64` 或 `baihu-linux-arm64`）。
+从当前 Release 的附件中下载对应架构的部署压缩包（如 `baihu-linux-amd64.tar.gz`），然后使用以下命令提取并运行：
 
 **⚠️ 重要前置依赖：手动安装 `mise`**
 单文件直接运行依赖宿主机系统环境，请务必先安装 [mise](https://mise.jdx.dev/getting-started.html) 供任务调度及环境管理使用：
@@ -17,6 +17,7 @@ export PATH="~/.local/share/mise/bin:~/.local/share/mise/shims:$PATH"
 
 **运行面板：**
 ```bash
+tar -xzvf baihu-linux-amd64.tar.gz
 chmod +x baihu-linux-amd64
 ./baihu-linux-amd64
 ```

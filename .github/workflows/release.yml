@@ -35,19 +35,47 @@ jobs:
           BUILD_TIME=$(TZ='Asia/Shanghai' date '+%Y/%m/%d %H:%M:%S')
           LDFLAGS="-s -w -X 'github.com/engigu/baihu-panel/internal/constant.Version=$VERSION' -X 'github.com/engigu/baihu-panel/internal/constant.BuildTime=$BUILD_TIME'"
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="$LDFLAGS" -o baihu-linux-amd64 main.go
+          tar -czvf baihu-linux-amd64.tar.gz baihu-linux-amd64
           CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="$LDFLAGS" -o baihu-linux-arm64 main.go
+          tar -czvf baihu-linux-arm64.tar.gz baihu-linux-arm64
 
       - name: Build Agent Binaries
-        run: make build-agent
+        run: |
+          VERSION=${{ github.ref_name }}
+          BUILD_TIME=$(TZ='Asia/Shanghai' date '+%Y/%m/%d %H:%M:%S')
+          AGENT_LDFLAGS="-s -w -X 'main.Version=$VERSION' -X 'main.BuildTime=$BUILD_TIME'"
+          mkdir -p data/agent
+          echo "$VERSION" > data/agent/version.txt
+          
+          # Linux AMD64
+          cd agent && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="$AGENT_LDFLAGS" -o ../data/agent/baihu-agent-linux-amd64 . && cd ..
+          cd data/agent && cp ../../agent/config.example.ini . && tar -czvf baihu-agent-linux-amd64.tar.gz baihu-agent-linux-amd64 config.example.ini && rm baihu-agent-linux-amd64 && cd ../..
+          
+          # Linux ARM64
+          cd agent && CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="$AGENT_LDFLAGS" -o ../data/agent/baihu-agent-linux-arm64 . && cd ..
+          cd data/agent && tar -czvf baihu-agent-linux-arm64.tar.gz baihu-agent-linux-arm64 config.example.ini && rm baihu-agent-linux-arm64 && cd ../..
+          
+          # Windows AMD64
+          cd agent && CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="$AGENT_LDFLAGS" -o ../data/agent/baihu-agent-windows-amd64.exe . && cd ..
+          cd data/agent && zip baihu-agent-windows-amd64.zip baihu-agent-windows-amd64.exe config.example.ini && rm baihu-agent-windows-amd64.exe && cd ../..
+          
+          # Darwin AMD64
+          cd agent && CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags="$AGENT_LDFLAGS" -o ../data/agent/baihu-agent-darwin-amd64 . && cd ..
+          cd data/agent && tar -czvf baihu-agent-darwin-amd64.tar.gz baihu-agent-darwin-amd64 config.example.ini && rm baihu-agent-darwin-amd64 && cd ../..
+          
+          # Darwin ARM64
+          cd agent && CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="$AGENT_LDFLAGS" -o ../data/agent/baihu-agent-darwin-arm64 . && cd ..
+          cd data/agent && tar -czvf baihu-agent-darwin-arm64.tar.gz baihu-agent-darwin-arm64 config.example.ini && rm baihu-agent-darwin-arm64 && cd ../..
 
       - name: Upload Binaries
         uses: actions/upload-artifact@v4
         with:
           name: baihu-binaries
           path: |
-            baihu-linux-amd64
-            baihu-linux-arm64
-            data/agent/baihu-agent-*
+            baihu-linux-amd64.tar.gz
+            baihu-linux-arm64.tar.gz
+            data/agent/baihu-agent-*.tar.gz
+            data/agent/baihu-agent-*.zip
 
   build:
     runs-on: ubuntu-latest
@@ -226,6 +254,7 @@ jobs:
           body_path: CHANGELOG.md
           append_body: true  # 追加模式：保留已有说明，在后面添加 CHANGELOG.md
           files: |
-            baihu-linux-amd64
-            baihu-linux-arm64
-            data/agent/baihu-agent-*
+            baihu-linux-amd64.tar.gz
+            baihu-linux-arm64.tar.gz
+            data/agent/baihu-agent-*.tar.gz
+            data/agent/baihu-agent-*.zip
