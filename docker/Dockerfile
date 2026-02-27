@@ -135,14 +135,12 @@ COPY --from=backend-builder /app/baihu .
 COPY --from=backend-builder /app/configs ./configs
 COPY docker/docker-entrypoint.sh .
 
-# Copy sync.py to /opt
-COPY custom/sync.py /opt/sync.py
+
 
 # Copy agent binaries to /opt/agent
 COPY --from=agent-builder /opt/agent /opt/agent
 
-RUN chmod +x /opt/sync.py \
-    && chmod +x docker-entrypoint.sh \
+RUN chmod +x docker-entrypoint.sh \
     && echo "set encoding=utf-8" >> /etc/vim/vimrc
 
 EXPOSE 8052

@@ -52,4 +52,4 @@ echo "[entrypoint][Nodejs] npm: $(npm --version) at $(which npm)"
 # 启动应用
 # ============================
 cd /app
-exec ./baihu
+exec ./baihu server

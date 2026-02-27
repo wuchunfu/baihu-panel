@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -819,8 +820,13 @@ func (es *ExecutorService) BuildRepoCommand(task *models.Task) (string, string) 
 	}
 	absTargetPath, _ := filepath.Abs(targetPath)
 
+	exePath, err := os.Executable()
+	if err != nil {
+		exePath = "baihu" // Fallback if executable path can't be found
+	}
+
 	args := []string{
-		"/opt/sync.py",
+		"reposync",
 		"--source-type", config.SourceType,
 		"--source-url", config.SourceURL,
 		"--target-path", absTargetPath,
@@ -844,7 +850,7 @@ func (es *ExecutorService) BuildRepoCommand(task *models.Task) (string, string) 
 		args = append(args, "--auth-token", config.AuthToken)
 	}
 
-	return "python3 " + strings.Join(args, " "), "/opt"
+	return exePath + " " + strings.Join(args, " "), filepath.Dir(exePath)
 }
 
 // loadEnvVars 加载环境变量

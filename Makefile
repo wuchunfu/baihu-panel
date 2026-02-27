@@ -72,7 +72,7 @@ clean:
 run:
 	@mkdir -p bin
 	$(GOBUILD) -o $(BINARY) main.go
-	./$(BINARY)
+	./$(BINARY) server
 
 # Development run with hot reload (both frontend and backend)
 dev:

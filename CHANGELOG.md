@@ -19,7 +19,7 @@ export PATH="~/.local/share/mise/bin:~/.local/share/mise/shims:$PATH"
 ```bash
 tar -xzvf baihu-linux-amd64.tar.gz
 chmod +x baihu-linux-amd64
-./baihu-linux-amd64
+./baihu-linux-amd64 server
 ```
 
 ---
