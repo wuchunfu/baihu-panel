@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"reflect"
 	"syscall"
 	"time"
 
@@ -312,10 +313,12 @@ func startDaemon() {
 		Stderr: devNull,
 	}
 
-	// 设置进程组，使子进程独立运行
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setsid: true,
+	// 设置进程组，使子进程独立运行 (跨平台兼容写法)
+	attr := &syscall.SysProcAttr{}
+	if field := reflect.ValueOf(attr).Elem().FieldByName("Setsid"); field.IsValid() {
+		field.SetBool(true)
 	}
+	cmd.SysProcAttr = attr
 
 	if err := cmd.Start(); err != nil {
 		fmt.Printf("启动失败: %v\n", err)
