@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -285,13 +286,36 @@ func getRepoName(url string) string {
 	return filepath.Base(u)
 }
 
+var ansiRegex = regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]`)
+
+type cleanWriter struct {
+	out io.Writer
+}
+
+func (c *cleanWriter) Write(p []byte) (n int, err error) {
+	s := string(p)
+	// Strip ANSI escape sequences like \x1b[K
+	s = ansiRegex.ReplaceAllString(s, "")
+	// Replace \r with \n for better rendering in raw log views
+	s = strings.ReplaceAll(s, "\r\n", "\n")
+	s = strings.ReplaceAll(s, "\r", "\n")
+	// Clean up duplicate newlines that might arise from \r replacements
+	s = strings.ReplaceAll(s, "\n\n", "\n")
+
+	_, err = c.out.Write([]byte(s))
+	return len(p), err
+}
+
 func runCmd(args []string, dir string, env []string) {
 	fmt.Printf(">> %s\n", strings.Join(args, " "))
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Dir = dir
 	cmd.Env = env
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	
+	cw := &cleanWriter{out: os.Stdout}
+	cmd.Stdout = cw
+	cmd.Stderr = cw
+	
 	if err := cmd.Run(); err != nil {
 		fmt.Printf("Command failed: %v\n", err)
 		os.Exit(1)
