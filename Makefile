@@ -28,7 +28,7 @@ build-all: build-web build
 # Build agent for all platforms
 build-agent: build-agent-linux-amd64 build-agent-linux-arm64 build-agent-windows-amd64 build-agent-darwin-amd64 build-agent-darwin-arm64
 	@echo "All agent packages built in data/agent/"
-	@ls -lh data/agent/*.tar.gz
+	@ls -lh data/agent/baihu-agent-*
 
 AGENT_LDFLAGS=-s -w -X 'main.Version=$(VERSION)' -X 'main.BuildTime=$(BUILD_TIME)'
 
