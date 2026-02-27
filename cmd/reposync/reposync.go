@@ -1,6 +1,7 @@
 package reposync
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -43,11 +44,11 @@ func Run(args []string) {
 	fs.Parse(args)
 
 	if cfg.SourceURL == "" || cfg.TargetPath == "" {
-		fmt.Println("Error: --source-url and --target-path are required")
+		fmt.Println("错误: 缺少 --source-url 或 --target-path 参数")
 		os.Exit(1)
 	}
 
-	fmt.Printf("Arguments: %v\n", args)
+	fmt.Printf("参数: %s\n", strings.Join(args, " "))
 
 	if cfg.SourceType == "git" {
 		syncGit(cfg)
@@ -60,7 +61,7 @@ func syncGit(cfg Config) {
 	env := os.Environ()
 
 	if isRawFileURL(cfg.SourceURL) {
-		fmt.Println("Raw file URL detected, switching to URL mode")
+		fmt.Println("检测到 raw 文件 URL，自动切换到 URL 下载模式")
 		syncURL(cfg)
 		return
 	}
@@ -85,25 +86,26 @@ func syncGit(cfg Config) {
 	if isDir(dest) && !pathExists(gitDir) {
 		repoName := getRepoName(cfg.SourceURL)
 		dest = filepath.Join(dest, repoName)
-		fmt.Printf("Appending repo name to target path: %s\n", dest)
+		fmt.Printf("目标路径自动追加仓库名: %s\n", dest)
 		gitDir = filepath.Join(dest, ".git")
 	}
 
 	if pathExists(gitDir) {
-		fmt.Println("Executing git pull")
+		fmt.Println("检测到已存在仓库，执行 git pull")
 		if cfg.Branch != "" {
 			runCmd([]string{"git", "checkout", cfg.Branch}, dest, env)
 		}
 		runCmd([]string{"git", "pull"}, dest, env)
 	} else {
-		fmt.Println("Executing git clone")
+		fmt.Println("执行 git clone")
 		parentDir := filepath.Dir(dest)
 		if parentDir != "" {
 			os.MkdirAll(parentDir, 0755)
 		}
 
 		if pathExists(dest) && !isDirEmpty(dest) {
-			fmt.Printf("Error: Target dir '%s' is not empty.\n", dest)
+			fmt.Printf("错误: 目标目录 '%s' 已存在且不为空，无法执行 git clone\n", dest)
+			fmt.Println("提示: 请清空目标目录或指定一个新目录")
 			os.Exit(1)
 		}
 
@@ -123,11 +125,12 @@ func syncGit(cfg Config) {
 			runCmd(cloneCmd, "", env)
 		}
 	}
-	fmt.Println("Sync completed")
+	fmt.Println("同步完成")
 }
 
 func syncURL(cfg Config) {
 	downloadURL := buildProxyURL(cfg.SourceURL, cfg.Proxy, cfg.ProxyURL)
+	fmt.Printf("下载地址: %s\n", downloadURL)
 	dest := cfg.TargetPath
 
 	if isDir(dest) || strings.HasSuffix(dest, string(os.PathSeparator)) || strings.HasSuffix(dest, "/") {
@@ -137,7 +140,7 @@ func syncURL(cfg Config) {
 			filename = "downloaded_file"
 		}
 		dest = filepath.Join(dest, filename)
-		fmt.Printf("Target file: %s\n", dest)
+		fmt.Printf("目标文件: %s\n", dest)
 	}
 
 	downloadFile(downloadURL, dest, cfg.AuthToken)
@@ -151,7 +154,7 @@ func syncGitFile(cfg Config, repoURL string, env []string) {
 	if isDir(dest) || strings.HasSuffix(dest, string(os.PathSeparator)) || strings.HasSuffix(dest, "/") {
 		filename := filepath.Base(filePath)
 		dest = filepath.Join(dest, filename)
-		fmt.Printf("Auto corrected path to: %s\n", dest)
+		fmt.Printf("检测到目标路径为目录 '%s'，自动修正为: '%s'\n", cfg.TargetPath, dest)
 	}
 
 	branch := cfg.Branch
@@ -178,7 +181,7 @@ func syncGitFile(cfg Config, repoURL string, env []string) {
 }
 
 func getRemoteDefaultBranch(repoURL string, env []string) string {
-	fmt.Printf("Detecting remote default branch: %s\n", repoURL)
+	fmt.Printf("正在检测远程仓库默认分支: %s\n", repoURL)
 	cmd := exec.Command("git", "ls-remote", "--symref", repoURL, "HEAD")
 	cmd.Env = env
 	out, err := cmd.Output()
@@ -188,12 +191,12 @@ func getRemoteDefaultBranch(repoURL string, env []string) string {
 			parts := strings.Fields(line)
 			if len(parts) >= 2 && parts[0] == "ref:" && strings.Contains(parts[1], "refs/heads/") {
 				branch := strings.TrimPrefix(parts[1], "refs/heads/")
-				fmt.Printf("Detected branch: %s\n", branch)
+				fmt.Printf("检测到默认分支: %s\n", branch)
 				return branch
 			}
 		}
 	}
-	fmt.Println("Failed to detect, using 'main'")
+	fmt.Println("无法检测到默认分支，回退使用 'main'")
 	return "main"
 }
 
@@ -217,8 +220,8 @@ func buildProxyURL(url string, proxyType string, proxyURL string) string {
 }
 
 func downloadFile(url, dest, authToken string) {
-	fmt.Printf("Downloading: %s\n", url)
-	fmt.Printf("To: %s\n", dest)
+	fmt.Printf("下载地址: %s\n", url)
+	fmt.Printf("目标路径: %s\n", dest)
 
 	parentDir := filepath.Dir(dest)
 	if parentDir != "" {
@@ -227,7 +230,7 @@ func downloadFile(url, dest, authToken string) {
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		fmt.Printf("Download prep failed: %v\n", err)
+		fmt.Printf("下载准备失败: %v\n", err)
 		os.Exit(1)
 	}
 	if authToken != "" {
@@ -238,31 +241,31 @@ func downloadFile(url, dest, authToken string) {
 	client := &http.Client{Timeout: 300 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Printf("Download request failed: %v\n", err)
+		fmt.Printf("下载请求失败: %v\n", err)
 		os.Exit(1)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		fmt.Printf("Download failed, HTTP code: %d\n", resp.StatusCode)
+		fmt.Printf("下载失败, HTTP 状态码: %d\n", resp.StatusCode)
 		os.Exit(1)
 	}
 
 	out, err := os.Create(dest)
 	if err != nil {
-		fmt.Printf("Failed to create file: %v\n", err)
+		fmt.Printf("创建文件失败: %v\n", err)
 		os.Exit(1)
 	}
 	defer out.Close()
 
 	n, err := io.Copy(out, resp.Body)
 	if err != nil {
-		fmt.Printf("Failed to write data: %v\n", err)
+		fmt.Printf("写入数据失败: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("File size: %d bytes\n", n)
-	fmt.Println("Download completed")
+	fmt.Printf("文件大小: %d 字节\n", n)
+	fmt.Println("下载完成")
 }
 
 func isRawFileURL(url string) bool {
@@ -286,24 +289,61 @@ func getRepoName(url string) string {
 	return filepath.Base(u)
 }
 
-var ansiRegex = regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]`)
+var ansiRegex = regexp.MustCompile("\x1b\\[[0-9;]*[a-zA-Z]")
 
 type cleanWriter struct {
 	out io.Writer
+	buf []byte
 }
 
 func (c *cleanWriter) Write(p []byte) (n int, err error) {
-	s := string(p)
-	// Strip ANSI escape sequences like \x1b[K
-	s = ansiRegex.ReplaceAllString(s, "")
-	// Replace \r with \n for better rendering in raw log views
-	s = strings.ReplaceAll(s, "\r\n", "\n")
-	s = strings.ReplaceAll(s, "\r", "\n")
-	// Clean up duplicate newlines that might arise from \r replacements
-	s = strings.ReplaceAll(s, "\n\n", "\n")
+	c.buf = append(c.buf, p...)
 
-	_, err = c.out.Write([]byte(s))
-	return len(p), err
+	for {
+		idx := bytes.IndexAny(c.buf, "\r\n")
+		if idx == -1 {
+			break
+		}
+
+		if c.buf[idx] == '\r' && idx == len(c.buf)-1 {
+			// Ends with \r across a chunk, wait for next.
+			break
+		}
+
+		char := c.buf[idx]
+		line := string(c.buf[:idx])
+		c.buf = c.buf[idx+1:]
+
+		if char == '\r' && len(c.buf) > 0 && c.buf[0] == '\n' {
+			c.buf = c.buf[1:]
+			char = '\n'
+		}
+
+		s := ansiRegex.ReplaceAllString(line, "")
+
+		if char == '\r' {
+			continue // filter out terminal progress overwrites
+		}
+
+		if s != "" {
+			c.out.Write([]byte(s + "\n"))
+		}
+	}
+	return len(p), nil
+}
+
+func (c *cleanWriter) Flush() {
+	if len(c.buf) > 0 {
+		s := string(c.buf)
+		if strings.HasSuffix(s, "\r") {
+			s = s[:len(s)-1]
+		}
+		s = ansiRegex.ReplaceAllString(s, "")
+		if s != "" {
+			c.out.Write([]byte(s + "\n"))
+		}
+		c.buf = nil
+	}
 }
 
 func runCmd(args []string, dir string, env []string) {
@@ -317,9 +357,11 @@ func runCmd(args []string, dir string, env []string) {
 	cmd.Stderr = cw
 	
 	if err := cmd.Run(); err != nil {
-		fmt.Printf("Command failed: %v\n", err)
+		cw.Flush()
+		fmt.Printf("命令执行失败: %v\n", err)
 		os.Exit(1)
 	}
+	cw.Flush()
 }
 
 func isDir(path string) bool {
