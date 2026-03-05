@@ -89,7 +89,7 @@ func Setup(c *Controllers) *gin.Engine {
 	}
 
 	// OpenAPI documentation using Scalar UI (带 Basic Auth 认证)
-	router.GET("/openapi/*any", func(c *gin.Context) {
+	root.GET("/openapi/*any", func(c *gin.Context) {
 		settingsSvc := services.NewSettingsService()
 		siteConfig := settingsSvc.GetSection(constant.SectionSite)
 		tokenJson := siteConfig[constant.KeyOpenapiToken]
@@ -118,12 +118,13 @@ func Setup(c *Controllers) *gin.Engine {
 			return
 		}
 
-		// 获取内部路径（移除开头的斜杠）
-		path := strings.TrimPrefix(c.Param("any"), "/")
+		// 获取内部路径并标准化（移除前后的所有斜杠）
+		// c.Param("any") 对于 *any 匹配通常包含领先斜杠，如 "/index.html"
+		path := strings.Trim(c.Param("any"), "/")
 
 		// 1. 根路径或空路径 -> 重定向到 index.html
-		if path == "" || path == "/" {
-			c.Redirect(http.StatusMovedPermanently, urlPrefix+"/openapi/index.html")
+		if path == "" {
+			c.Redirect(http.StatusMovedPermanently, c.Request.URL.Path+"index.html")
 			return
 		}
 
@@ -145,7 +146,8 @@ func Setup(c *Controllers) *gin.Engine {
   </body>
 </html>`
 			c.Header("Content-Type", "text/html; charset=utf-8")
-			c.String(http.StatusOK, scalarHTML)
+			c.Status(http.StatusOK)
+			c.Writer.Write([]byte(scalarHTML))
 			c.Abort()
 			return
 		}
@@ -158,7 +160,7 @@ func Setup(c *Controllers) *gin.Engine {
 			return
 		}
 
-		// 4. 其余路径一律返回 SPA 的 404
+		// 其他未匹配路径 -> 返回 404 SPA 页面
 		serveSPA(c, urlPrefix, 404)
 	})
 
@@ -399,10 +401,23 @@ func Setup(c *Controllers) *gin.Engine {
 func serveSPA(ctx *gin.Context, urlPrefix string, status int) {
 	data, err := static.ReadFile("index.html")
 	if err != nil {
-		// 如果读不到 index.html (如 dev 模式未 build)，返回基础 HTML 触发前端路由
+		// 如果读不到 index.html (如 dev 模式未 build)，返回基础 HTML
+		// 如果已经是 /404 路径，则不再重定向以免死循环
+		path := ctx.Request.URL.Path
+		if strings.HasSuffix(path, "/404") {
+			ctx.Data(status, "text/html; charset=utf-8", []byte("<!DOCTYPE html><html><body><h1>404 Not Found</h1><p>Frontend assets not found. Please run 'npm run build' or check dev server.</p><a href='/'>Go Home</a></body></html>"))
+			ctx.Abort()
+			return
+		}
+
 		fallback := `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>404 Not Found</title></head><body>
-			<script>window.location.href = (window.__BASE_URL__ || "/") + "404";</script>
-			<p>Not Found. Redirecting to home...</p>
+			<script>
+				const baseUrl = window.__BASE_URL__ || "/";
+				if (!window.location.pathname.endsWith("/404")) {
+					window.location.href = baseUrl + (baseUrl.endsWith("/") ? "" : "/") + "404";
+				}
+			</script>
+			<p>Not Found. Redirecting...</p>
 			</body></html>`
 		ctx.Header("Content-Type", "text/html; charset=utf-8")
 		ctx.Data(status, "text/html", []byte(fallback))

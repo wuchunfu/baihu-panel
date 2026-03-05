@@ -178,11 +178,12 @@ func ClearAuthCookie(c *gin.Context) {
 
 // SwaggerAuth Swagger 认证中间件 (Basic Auth)
 func SwaggerAuth() gin.HandlerFunc {
-	settingsSvc := services.NewSettingsService()
 	return func(c *gin.Context) {
+		settingsSvc := services.NewSettingsService()
 		siteConfig := settingsSvc.GetSection(constant.SectionSite)
-		tokenJson, ok := siteConfig[constant.KeyOpenapiToken]
-		if !ok || tokenJson == "" {
+		tokenJson := siteConfig[constant.KeyOpenapiToken]
+
+		if tokenJson == "" {
 			c.Status(http.StatusNotFound)
 			c.Abort()
 			return
@@ -202,6 +203,20 @@ func SwaggerAuth() gin.HandlerFunc {
 			return
 		}
 
+		// 检查过期时间
+		if tokenConfig.ExpireAt != "" {
+			expire, err := time.ParseInLocation("2006/01/02", tokenConfig.ExpireAt, time.Local)
+			if err == nil {
+				// 包含当天，所以设置到当天 23:59:59
+				expire = expire.Add(24*time.Hour - time.Second)
+				if time.Now().After(expire) {
+					c.Status(http.StatusNotFound)
+					c.Abort()
+					return
+				}
+			}
+		}
+
 		_, password, hasAuth := c.Request.BasicAuth()
 		// 允许使用任意用户名，但密码必须匹配 OpenAPI Token
 		if hasAuth && password == tokenConfig.Token && tokenConfig.Token != "" {
@@ -209,7 +224,7 @@ func SwaggerAuth() gin.HandlerFunc {
 			return
 		}
 
-		// 认证失败，提示输入密码 (如果未提供认证)
+		// 未提供认证，触发浏览器登录弹窗
 		if !hasAuth {
 			c.Header("WWW-Authenticate", `Basic realm="OpenAPI Access Token (Any username)"`)
 			c.Status(http.StatusUnauthorized)
