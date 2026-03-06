@@ -19,7 +19,6 @@ import (
 	"github.com/engigu/baihu-panel/internal/utils"
 
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 // AgentWSManager 接口定义（避免循环依赖）
@@ -768,54 +767,72 @@ func (es *ExecutorService) CheckConcurrency(taskID string) error {
 // AddRunningGo 添加当前 goroutine ID 到任务的 running_go 字段
 func (es *ExecutorService) AddRunningGo(taskID string) (int64, error) {
 	goid := utils.GetGoroutineID()
-	err := database.DB.Transaction(func(tx *gorm.DB) error {
-		var task models.Task
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", taskID).First(&task).Error; err != nil {
-			return err
-		}
-		var goids []int64
-		if task.RunningGo != "" {
-			_ = json.Unmarshal([]byte(task.RunningGo), &goids)
-		}
+	var lastErr error
+	for attempt := 0; attempt < 3; attempt++ {
+		lastErr = database.DB.Transaction(func(tx *gorm.DB) error {
+			var task models.Task
+			if err := tx.Where("id = ?", taskID).First(&task).Error; err != nil {
+				return err
+			}
+			var goids []int64
+			if task.RunningGo != "" {
+				_ = json.Unmarshal([]byte(task.RunningGo), &goids)
+			}
 
-		// 解析配置以获取并发设置
-		var config models.TaskConfig
-		if task.Config != "" {
-			_ = json.Unmarshal([]byte(task.Config), &config)
-		}
+			// 解析配置以获取并发设置
+			var config models.TaskConfig
+			if task.Config != "" {
+				_ = json.Unmarshal([]byte(task.Config), &config)
+			}
 
-		// 如果并发为0(禁用)且已有执行中的任务，返回错误
-		if config.Concurrency == 0 && len(goids) > 0 {
-			return fmt.Errorf("task is running")
-		}
+			// 如果并发为0(禁用)且已有执行中的任务，返回错误
+			if config.Concurrency == 0 && len(goids) > 0 {
+				return fmt.Errorf("task is running")
+			}
 
-		goids = append(goids, goid)
-		data, _ := json.Marshal(goids)
-		return tx.Model(&task).Update("running_go", string(data)).Error
-	})
-	return goid, err
+			goids = append(goids, goid)
+			data, _ := json.Marshal(goids)
+			return tx.Model(&task).Update("running_go", string(data)).Error
+		})
+		if lastErr == nil {
+			return goid, nil
+		}
+		// 如果是业务错误（任务正在运行），不重试
+		if lastErr.Error() == "task is running" {
+			return goid, lastErr
+		}
+		// 数据库锁错误，等待后重试
+		time.Sleep(100 * time.Millisecond)
+	}
+	return goid, fmt.Errorf("任务并发限制: %v", lastErr)
 }
 
 // RemoveRunningGo 从任务的 running_go 字段移除指定 goroutine ID
 func (es *ExecutorService) RemoveRunningGo(taskID string, goid int64) {
-	database.DB.Transaction(func(tx *gorm.DB) error {
-		var task models.Task
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", taskID).First(&task).Error; err != nil {
-			return err
-		}
-		var goids []int64
-		if task.RunningGo != "" {
-			_ = json.Unmarshal([]byte(task.RunningGo), &goids)
-		}
-		newGoids := make([]int64, 0)
-		for _, id := range goids {
-			if id != goid {
-				newGoids = append(newGoids, id)
+	for attempt := 0; attempt < 3; attempt++ {
+		err := database.DB.Transaction(func(tx *gorm.DB) error {
+			var task models.Task
+			if err := tx.Where("id = ?", taskID).First(&task).Error; err != nil {
+				return err
 			}
+			var goids []int64
+			if task.RunningGo != "" {
+				_ = json.Unmarshal([]byte(task.RunningGo), &goids)
+			}
+			newGoids := make([]int64, 0)
+			for _, id := range goids {
+				if id != goid {
+					newGoids = append(newGoids, id)
+				}
+			}
+			data, _ := json.Marshal(newGoids)
+			return tx.Model(&task).Update("running_go", string(data)).Error
+		})
+		if err == nil {
+			return
 		}
-		data, _ := json.Marshal(newGoids)
-		return tx.Model(&task).Update("running_go", string(data)).Error
-	})
+		time.Sleep(100 * time.Millisecond)
+	}
 }
 
 // ExecuteRemoteForScheduler 供 Scheduler 调用，执行远程任务并等待结果
