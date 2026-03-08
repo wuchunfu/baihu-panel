@@ -132,6 +132,9 @@ func initStaticRoutes(root *gin.RouterGroup) {
 }
 
 func initOpenAPIRoutes(root *gin.RouterGroup, urlPrefix string) {
+	// 预先创建 Swagger Handler，避免重复解析 docs.go 导致内存尖峰
+	swagHandler := ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL(urlPrefix+"/openapi/doc.json"))
+
 	// OpenAPI documentation using Scalar UI (带 Basic Auth 认证)
 	root.GET("/openapi/*any", func(c *gin.Context) {
 		settingsSvc := services.NewSettingsService()
@@ -197,9 +200,8 @@ func initOpenAPIRoutes(root *gin.RouterGroup, urlPrefix string) {
 
 		// 3. 提供给 Scalar/Swagger 使用的 doc.json 内容
 		if path == "doc.json" {
-			// 这里借助 ginSwagger 仅生成 doc.json 内容
-			h := ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL(urlPrefix+"/openapi/doc.json"))
-			h(c)
+			// 使用预先创建并缓存的 handler
+			swagHandler(c)
 			return
 		}
 
