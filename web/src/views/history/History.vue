@@ -1,14 +1,13 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { TASK_STATUS, TASK_TYPE } from '@/constants'
+import { TASK_STATUS } from '@/constants'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import Pagination from '@/components/Pagination.vue'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
-  RefreshCw, X, Search, GitBranch, Terminal,
-  CheckCircle2, XCircle, AlertCircle, Ban, Clock, Zap as ZapIcon, Check, Trash2, Maximize2
+  RefreshCw, X, Search, Trash2, Maximize2
 } from 'lucide-vue-next'
 import LogViewer from './LogViewer.vue'
 import { api, type TaskLog } from '@/api'
@@ -25,8 +24,6 @@ import {
 } from '@/components/ui/alert-dialog'
 import { toast } from 'vue-sonner'
 import { useSiteSettings } from '@/composables/useSiteSettings'
-import TextOverflow from '@/components/TextOverflow.vue'
-import { useTheme } from '@/composables/useTheme'
 
 const route = useRoute()
 const { pageSize } = useSiteSettings()
@@ -45,8 +42,6 @@ const showFullscreen = ref(false)
 const showClearDialog = ref(false)
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null
-
-const { resolvedTheme } = useTheme()
 
 async function loadLogs() {
   try {
@@ -95,21 +90,6 @@ async function selectLog(log: TaskLog) {
 
 function closeDetail() {
   selectedLog.value = null
-}
-
-const isStopping = ref(false)
-async function stopTask() {
-  if (!selectedLog.value || isStopping.value) return
-
-  try {
-    isStopping.value = true
-    await api.tasks.stop(selectedLog.value.id)
-    toast.success('停止请求已发送')
-  } catch (err: any) {
-    toast.error(err.message || '停止失败')
-  } finally {
-    isStopping.value = false
-  }
 }
 
 function formatDuration(ms: number): string {
@@ -168,10 +148,6 @@ function getStatusBadgeClass(status: string) {
     default:
       return 'bg-secondary text-secondary-foreground border-transparent'
   }
-}
-
-function getTaskTypeTitle(type: string) {
-  return type === TASK_TYPE.REPO ? '仓库同步' : '普通任务'
 }
 
 onMounted(() => {
@@ -234,7 +210,6 @@ onMounted(() => {
     <div class="flex-1 flex flex-col lg:flex-row gap-4 min-h-0">
       <!-- 日志列表 -->
       <div class="flex-1 min-w-0 rounded-lg border bg-card overflow-hidden flex flex-col">
-        <!-- 小屏表头 (省略) -->
         <div class="divide-y flex-1 overflow-y-auto">
           <div v-if="logs.length === 0" class="text-sm text-muted-foreground text-center py-8">
             暂无日志
@@ -243,7 +218,6 @@ onMounted(() => {
             'cursor-pointer hover:bg-muted/30 transition-colors group',
             selectedLog?.id === log.id && 'bg-accent/50'
           ]" @click="selectLog(log)">
-            <!-- 日志行内容 (保持原样) -->
             <div class="flex items-center gap-4 px-4 py-3">
               <span class="w-16 shrink-0 text-muted-foreground text-sm">#{{ total - (currentPage - 1) * pageSize - index }}</span>
               <span class="w-36 shrink-0 font-medium truncate text-sm">{{ log.task_name }}</span>
@@ -278,7 +252,6 @@ onMounted(() => {
           </div>
         </div>
         <div class="flex-1 overflow-y-auto p-4 space-y-4">
-           <!-- 详情信息 (任务名称, 状态, 耗时, 命令等) -->
            <div class="grid grid-cols-2 gap-y-3 text-sm">
              <span class="text-muted-foreground">任务名称</span>
              <span class="text-right font-medium">{{ selectedLog.task_name }}</span>

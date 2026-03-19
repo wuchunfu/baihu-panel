@@ -212,9 +212,9 @@ function submitQlImport() {
     // form task name
     let name = '同步 '
     try {
-      const urlPaths = args[2].split('/')
-      if (urlPaths.length > 0) {
-        name += urlPaths[urlPaths.length - 1].replace('.git', '')
+      const urlPaths = args[2]?.split('/')
+      if (urlPaths && urlPaths.length > 0) {
+        name += urlPaths[urlPaths.length - 1]?.replace('.git', '') || ''
       } else {
         name += '未命名仓库'
       }
@@ -372,7 +372,7 @@ async function loadAgents() {
 
 async function save() {
   if (repoConfig.value.auto_add_cron) {
-    if (selectedLangs.value.length === 0 || !selectedLangs.value[0].name) {
+    if (selectedLangs.value.length === 0 || !selectedLangs.value[0]?.name) {
       toast.error('您开启了“自动添加任务”，请先至少添加并选择一个运行语言环境和版本')
       return
     }
