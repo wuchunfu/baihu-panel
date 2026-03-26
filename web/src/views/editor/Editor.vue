@@ -115,15 +115,20 @@ async function fetchPaths() {
 
 const editorRef = shallowRef()
 const isSmallScreen = ref(window.innerWidth < 1024)
+const editorFontSize = computed(() => isSmallScreen.value ? 12 : 13)
 
 const editorOptions = computed(() => ({
   minimap: { enabled: false },
-  fontSize: isSmallScreen.value ? 12 : 13,
+  fontSize: editorFontSize.value,
   lineNumbers: 'on' as const,
   scrollBeyondLastLine: false,
   readOnly: !isEditMode.value,
   domReadOnly: !isEditMode.value,
   automaticLayout: true,
+  tabSize: 2,
+  wordWrap: 'on' as const,
+  folding: true,
+  renderLineHighlight: 'all' as const,
 }))
 
 function handleEditorMount(editor: any) {
