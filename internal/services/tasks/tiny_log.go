@@ -56,11 +56,12 @@ type TinyLog struct {
 	writer      *bufio.Writer
 	subscribers []chan []byte
 	remainder   []byte // Leftover bytes from previous write (partial multi-byte characters)
+	masks       []string // Secrets to mask
 	closed      bool
 }
 
-// NewTinyLog 创建一个新的 TinyLog 实例（基于临时文件存储）并注册它
-func NewTinyLog(logID string) (*TinyLog, error) {
+// NewTinyLog 创建一个新的 TinyLog 实例（基于临时文件存储）并注册它，支持将配置的 masks 替换为 ********
+func NewTinyLog(logID string, masks []string) (*TinyLog, error) {
 	f, err := os.CreateTemp("", "task_log_*.log")
 	if err != nil {
 		return nil, err
@@ -72,6 +73,7 @@ func NewTinyLog(logID string) (*TinyLog, error) {
 		path:        f.Name(),
 		writer:      bufio.NewWriter(f),
 		subscribers: make([]chan []byte, 0),
+		masks:       masks,
 	}
 	globalTinyLogManager.Register(tl)
 	return tl, nil
@@ -115,8 +117,8 @@ func (l *TinyLog) Write(p []byte) (n int, err error) {
 		return originalInputLen, nil
 	}
 
-	// 3. 仅将完整的部分转换为 UTF-8
-	text := utils.ToUTF8(payload[:lastSafe])
+	// 3. 仅将完整的部分转换为 UTF-8，并调用封装的函数进行脱敏处理
+	text := utils.MaskSecrets(utils.ToUTF8(payload[:lastSafe]), l.masks)
 	data := []byte(text)
 
 	// 4. 写入文件缓冲区
@@ -179,7 +181,7 @@ func (l *TinyLog) Close() error {
 
 	// 处理剩余的字节
 	if len(l.remainder) > 0 {
-		text := utils.ToUTF8(l.remainder)
+		text := utils.MaskSecrets(utils.ToUTF8(l.remainder), l.masks)
 		data := []byte(text)
 		_, _ = l.writer.Write(data)
 

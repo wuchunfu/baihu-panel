@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import DirTreeSelect from '@/components/DirTreeSelect.vue'
-import { Plus, ChevronDown, X, Search, Check, ChevronsUpDown, AlertCircle, Terminal, Clock, Zap, Loader2 } from 'lucide-vue-next'
+import { Plus, ChevronDown, X, Search, Check, ChevronsUpDown, AlertCircle, Terminal, Clock, Zap, Loader2, Shield } from 'lucide-vue-next'
 import { cn } from '@/lib/utils'
 import { api, type Task, type EnvVar, type Agent, type MiseLanguage } from '@/api'
 import { PATHS, TRIGGER_TYPE } from '@/constants'
@@ -729,7 +729,13 @@ async function save() {
                           <div v-for="env in filteredEnvVars" :key="env.id" @click.stop="addEnv(env.id)"
                             class="flex flex-col p-3 rounded-lg hover:bg-primary/5 cursor-pointer transition-all border border-transparent hover:border-primary/10 mb-1 group">
                             <div class="flex items-center justify-between mb-1">
-                              <span class="text-sm font-mono font-bold tracking-tight group-hover:text-primary transition-colors">{{ env.name }}</span>
+                              <div class="flex items-center gap-2">
+                                <span class="text-sm font-mono font-bold tracking-tight group-hover:text-primary transition-colors">{{ env.name }}</span>
+                                <span v-if="env.type === 'secret'" class="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[9px] font-bold">
+                                  <Shield class="h-2.5 w-2.5" />
+                                  机密
+                                </span>
+                              </div>
                               <Button variant="ghost" size="icon" class="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <Plus class="h-4 w-4" />
                               </Button>
@@ -743,6 +749,7 @@ async function save() {
                     <div v-if="selectedEnvs.length > 0" class="flex flex-wrap gap-2 p-3 rounded-xl bg-muted/10 border border-muted-foreground/10 min-h-12">
                       <div v-for="env in selectedEnvs" :key="env?.id"
                         class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-background border border-muted-foreground/15 text-[11px] group shadow-sm transition-all hover:border-primary/30">
+                        <Shield v-if="env?.type === 'secret'" class="h-3 w-3 text-amber-500" />
                         <span class="font-mono font-medium opacity-80">{{ env?.name }}</span>
                         <Button variant="ghost" size="icon" class="h-4 w-4 rounded-full p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                           @click="removeEnv(env!.id)">

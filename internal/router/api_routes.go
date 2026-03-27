@@ -89,6 +89,7 @@ func registerTaskRoutes(g *gin.RouterGroup, c *Controllers) {
 func registerEnvRoutes(g *gin.RouterGroup, c *Controllers) {
 	env := g.Group("/env")
 	{
+		env.GET("/secret-status", c.Env.GetSecretStatus)
 		env.POST("", c.Env.CreateEnvVar)
 		env.GET("", c.Env.GetEnvVars)
 		env.GET("/all", c.Env.GetAllEnvVars)

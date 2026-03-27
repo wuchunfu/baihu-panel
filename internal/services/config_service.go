@@ -45,6 +45,7 @@ var Config *AppConfig
 func getEnvStr(key string, target *string) {
 	if v := os.Getenv(key); v != "" {
 		*target = v
+		_ = os.Unsetenv(key)
 	}
 }
 
@@ -54,6 +55,7 @@ func getEnvBool(key string, target *bool) {
 		if b, err := strconv.ParseBool(v); err == nil {
 			*target = b
 		}
+		_ = os.Unsetenv(key)
 	}
 }
 
@@ -63,6 +65,7 @@ func getEnvInt(key string, target *int) {
 		if n, err := strconv.Atoi(v); err == nil {
 			*target = n
 		}
+		_ = os.Unsetenv(key)
 	}
 }
 
@@ -130,6 +133,7 @@ func LoadConfig(path string) (*AppConfig, error) {
 	if v := os.Getenv("BH_DEMO_MODE"); v == "true" || v == "1" {
 		constant.DemoMode = true
 		logger.Info("[Config] 演示模式已启用")
+		_ = os.Unsetenv("BH_DEMO_MODE")
 	}
 
 	// 输出配置信息（隐藏敏感信息）

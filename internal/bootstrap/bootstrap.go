@@ -33,6 +33,7 @@ func New() *App {
 func InitBasic() *App {
 	app := &App{}
 	utils.InitRuntime()
+	utils.InitSecretKey()
 	
 	// 自动加载配置 (内部会自动处理 BH_CONFIG_PATH 环境变量与默认路径的优先级)
 	app.initConfigWithPath("")

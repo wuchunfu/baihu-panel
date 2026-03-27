@@ -13,6 +13,7 @@
 
 ### 最近更新
 
+**2026.03.27** - **安全机密管理 (GitHub Secrets 风格)**：新增系统级机密（Secret）管理功能。支持 AES-GCM 工业级加密存储，秘钥内存留存销毁；支持执行日志自动脱敏打码；支持仅在计划任务调度时按需注入，终端与测试运行物理隔离，全面提升敏感配置安全性。  
 **2026.03.19** - **仓库同步增强**：新增对青龙仓库格式指令的深度兼容，支持从远程 Git 仓库自动同步脚本并基于注释解析自动创建面板任务，支持白名单、黑名单、依赖保留等高级筛选特性。  
 **2026.03.05** - **API 文档重构** 重构 OpenAPI 认证体系，支持站点级 Token 配置与 Basic Auth 保护。  
 **2026.03.04** - 新增内置消息推送系统：全新原生支持企业微信、钉钉、飞书、Telegram、Bark、邮件等十余种主流渠道的推送，接入系统级事件通知自动捕获，告别原有必配外部推送服务的繁琐历史  
@@ -46,7 +47,8 @@
 - **脚本管理：** 在线代码编辑器，支持文件上传、压缩包解压
 - **在线终端：** WebSocket 实时终端，命令执行结果实时输出
 - **消息推送：** 内置强大消息推送与通知引擎，无缝兼容主流渠道，支持系统级事件告警
-- **环境变量：** 安全存储敏感配置，任务执行时自动注入
+- **机密管理：** **(New)** 类似 GitHub Secrets 的安全存储，支持 AES-GCM 加密，日志自动打码，仅在调度时注入
+- **环境变量：** 存储普通配置，任务执行时自动注入
 - **现代UI：** 响应式设计，深色/浅色主题切换
 - **移动端：** 适配移动小屏样式
 - **远程执行：** 支持远程agent执行任务，展示执行结果
@@ -88,10 +90,12 @@
 - 支持系统级事件条件触发通知（例如任务失败报警、服务下线提醒）
 - 自动生成跨语言调用 API 示例代码供脚本集成
 
-### 环境变量
-- 安全存储敏感配置
-- 变量值脱敏显示
-- 任务执行时自动注入
+### 变量与机密
+- 支持普通环境变量与安全机密（Secret）分类管理
+- 机密使用 **AES-GCM** 加密存储，数据库不存明文
+- 秘钥仅在内存中留存，启动读取后立即销毁（Unset）
+- 执行日志自动搜索并**屏蔽(********)**敏感机密内容
+- 严格权限隔离：机密仅在定时任务调度时注入，终端/测试环境不可见
 
 ### 仓库任务同步 (New)
 - 支持 青龙 仓库命令格式快捷导入
@@ -194,6 +198,7 @@ docker run -d \
   -e BH_DB_TYPE=sqlite \
   -e BH_DB_PATH=/app/data/baihu.db \
   -e BH_DB_TABLE_PREFIX=baihu_ \
+  -e BAIHU_SECRET_KEY=your_secret_key_here \
   --restart unless-stopped \
   ghcr.io/engigu/baihu:latest
 ```
@@ -223,6 +228,7 @@ services:
       - BH_DB_TYPE=sqlite
       - BH_DB_PATH=/app/data/baihu.db
       - BH_DB_TABLE_PREFIX=baihu_
+      - BAIHU_SECRET_KEY=your_secret_key_here
       # - BH_SERVER_URL_PREFIX=/baihu  # 可选：配置 URL 前缀用于反向代理
     logging:
       driver: json-file
@@ -250,6 +256,7 @@ docker run -d \
   -e BH_DB_PASSWORD=your_password \
   -e BH_DB_NAME=baihu \
   -e BH_DB_TABLE_PREFIX=baihu_ \
+  -e BAIHU_SECRET_KEY=your_secret_key_here \
   --restart unless-stopped \
   ghcr.io/engigu/baihu:latest
 ```
@@ -280,6 +287,7 @@ services:
       - BH_DB_PASSWORD=your_password
       - BH_DB_NAME=baihu
       - BH_DB_TABLE_PREFIX=baihu_
+      - BAIHU_SECRET_KEY=your_secret_key_here
     logging:
       driver: json-file
       options:
@@ -305,6 +313,7 @@ docker run -d \
   -v $(pwd)/configs:/app/configs \
   -v $(pwd)/envs:/app/envs \
   -e TZ=Asia/Shanghai \
+  -e BAIHU_SECRET_KEY=your_secret_key_here \
   --restart unless-stopped \
   ghcr.io/engigu/baihu:latest
 ```
@@ -324,6 +333,7 @@ services:
       - ./envs:/app/envs
     environment:
       - TZ=Asia/Shanghai
+      - BAIHU_SECRET_KEY=your_secret_key_here
     logging:
       driver: json-file
       options:
@@ -382,6 +392,7 @@ services:
       - BH_DB_TYPE=sqlite
       - BH_DB_PATH=/app/data/baihu.db
       - BH_DB_TABLE_PREFIX=baihu_
+      - BAIHU_SECRET_KEY=your_secret_key_here
     logging:
       driver: json-file
       options:
@@ -438,6 +449,7 @@ services:
       - BH_DB_PASSWORD=your_password  # 修改为你的 MySQL 密码
       - BH_DB_NAME=baihu
       - BH_DB_TABLE_PREFIX=baihu_
+      - BAIHU_SECRET_KEY=your_secret_key_here
     logging:
       driver: json-file
       options:
@@ -663,6 +675,7 @@ table_prefix = baihu_
 | `BH_DB_NAME` | database.dbname | 数据库名称 | ql_panel |
 | `BH_DB_PATH` | database.path | SQLite 文件路径 | ./data/baihu.db |
 | `BH_DB_TABLE_PREFIX` | database.table_prefix | 表前缀 | baihu_ |
+| `BAIHU_SECRET_KEY` | - | 系统加密秘钥，用于机密功能（**注：仅支持环境变量设置，不支持配置文件**） | - |
 
 ### URL 前缀配置
 

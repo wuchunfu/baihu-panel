@@ -58,7 +58,7 @@ const navItems = [
   { to: '/agents', icon: Server, label: '远程执行', exact: true },
   { to: '/editor', icon: FileCode, label: '脚本编辑', exact: false },
   { to: '/history', icon: ScrollText, label: '执行历史', exact: true },
-  { to: '/environments', icon: Variable, label: '环境变量', exact: true },
+  { to: '/environments', icon: Variable, label: '变量机密', exact: true },
   { to: '/languages', icon: Globe, label: '语言依赖', exact: true },
   { to: '/terminal', icon: Terminal, label: '终端命令', exact: true },
   { to: '/notify', icon: Bell, label: '消息推送', exact: true },

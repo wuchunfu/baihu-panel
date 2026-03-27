@@ -90,13 +90,15 @@ export const api = {
     delete: (id: string) => request(`/scripts/${id}`, { method: 'DELETE' })
   },
   env: {
-    list: (params?: { page?: number; page_size?: number; name?: string }) => {
+    list: (params?: { page?: number; page_size?: number; name?: string; type?: string }) => {
       const query = new URLSearchParams()
       if (params?.page) query.set('page', String(params.page))
       if (params?.page_size) query.set('page_size', String(params.page_size))
       if (params?.name) query.set('name', params.name)
+      if (params?.type && params.type !== 'all') query.set('type', params.type)
       return request<EnvListResponse>(`/env?${query}`)
     },
+    secretStatus: () => request<boolean>('/env/secret-status'),
     all: () => request<EnvVar[]>('/env/all'),
     tasks: (id: string) => request<Task[]>(`/env/${id}/tasks`),
     create: (data: Partial<EnvVar>) => request<EnvVar>('/env', { method: 'POST', body: JSON.stringify(data) }),
@@ -399,6 +401,7 @@ export interface EnvVar {
   name: string
   value: string
   remark: string
+  type: string
   hidden: boolean
   enabled: boolean
 }

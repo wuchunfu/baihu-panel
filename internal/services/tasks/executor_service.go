@@ -38,6 +38,8 @@ type SettingsService interface {
 type EnvService interface {
 	GetEnvVarsByIDs(ids string) []string
 	GetAllEnvVars() []string
+	GetEnvVarsAndSecretsByIDs(ids string) ([]string, []string)
+	GetAllEnvVarsAndSecrets() ([]string, []string)
 }
 
 type ExecutorService struct {
@@ -143,7 +145,7 @@ func (h *ServerSchedulerHandler) OnTaskExecuting(req *executor.ExecutionRequest)
 	req.Metadata.GoID = goid
 
 	// 3. 创建 TinyLog 实时日志收集器
-	tl, err := NewTinyLog(taskLog.ID)
+	tl, err := NewTinyLog(taskLog.ID, req.Secrets)
 	if err != nil {
 		h.es.RemoveRunningGo(task.ID, goid) // 回滚运行状态
 		return nil, nil, fmt.Errorf("创建日志收集器失败: %v", err)
@@ -374,13 +376,14 @@ func (es *ExecutorService) HandleTaskRetry(task *models.Task, req *executor.Exec
 					return nil
 				}
 
-				newEnvs := es.loadEnvVars(latestTask.ID, string(latestTask.Envs))
+				newEnvs, newSecrets := es.loadEnvVars(latestTask.ID, string(latestTask.Envs))
 				return &executor.ExecutionRequest{
 					TaskID:    req.TaskID,
 					Name:      latestTask.Name,
 					Command:   string(latestTask.Command),
 					WorkDir:   latestTask.WorkDir,
 					Envs:      newEnvs,
+					Secrets:   newSecrets,
 					Timeout:   latestTask.Timeout,
 					Languages: []map[string]string(latestTask.Languages),
 					UseMise:   latestTask.UseMise(),
@@ -507,7 +510,7 @@ func (es *ExecutorService) AddCronTask(task *models.Task) error {
 		return nil
 	}
 	// 在加入调度器前，预先加载好环境信息
-	task.RuntimeEnvs = es.loadEnvVars(task.ID, string(task.Envs))
+	task.RuntimeEnvs, _ = es.loadEnvVars(task.ID, string(task.Envs))
 
 	return es.cronManager.AddTask(task)
 }
@@ -588,7 +591,7 @@ func (es *ExecutorService) ExecuteTask(taskID string, extraEnvs []string) *execu
 		}
 	}
 
-	envs := es.loadEnvVars(task.ID, string(task.Envs))
+	envs, secrets := es.loadEnvVars(task.ID, string(task.Envs))
 	if len(extraEnvs) > 0 {
 		envs = append(envs, extraEnvs...)
 	}
@@ -599,6 +602,7 @@ func (es *ExecutorService) ExecuteTask(taskID string, extraEnvs []string) *execu
 		Command:   string(task.Command),
 		WorkDir:   task.WorkDir,
 		Envs:      envs,
+		Secrets:   secrets,
 		Timeout:   task.Timeout,
 		Languages: []map[string]string(task.Languages),
 		UseMise:   task.UseMise(),
@@ -1001,8 +1005,8 @@ func (es *ExecutorService) BuildRepoCommand(task *models.Task) (string, string) 
 	return buildRepoCommandEnvPrefix()+cmdStr, filepath.Dir(exePath)
 }
 
-// loadEnvVars 加载环境变量，支持全局注入及重名合并
-func (es *ExecutorService) loadEnvVars(taskID string, envIDs string) []string {
+// loadEnvVars 加载环境变量和掩码信息，支持全局注入及重名合并
+func (es *ExecutorService) loadEnvVars(taskID string, envIDs string) ([]string, []string) {
 	// 1. 检查是否开启了注入全部环境变量
 	if taskID != "" && es.taskService != nil {
 		task := es.taskService.GetTaskByID(taskID)
@@ -1011,7 +1015,7 @@ func (es *ExecutorService) loadEnvVars(taskID string, envIDs string) []string {
 			if err := json.Unmarshal([]byte(task.Config), &config); err == nil {
 				if config.AllEnvs {
 					if es.envService != nil {
-						return es.envService.GetAllEnvVars()
+						return es.envService.GetAllEnvVarsAndSecrets()
 					}
 				}
 			}
@@ -1020,14 +1024,14 @@ func (es *ExecutorService) loadEnvVars(taskID string, envIDs string) []string {
 
 	// 2. 否则按 ID 列表进行加载（支持合并逻辑在 envService 中处理）
 	if envIDs == "" {
-		return nil
+		return nil, nil
 	}
 
 	if es.envService != nil {
-		return es.envService.GetEnvVarsByIDs(envIDs)
+		return es.envService.GetEnvVarsAndSecretsByIDs(envIDs)
 	}
 
-	return nil
+	return nil, nil
 }
 
 func (es *ExecutorService) ResolvePath(path string) string {

@@ -1,6 +1,7 @@
 package vo
 
 import (
+	"github.com/engigu/baihu-panel/internal/constant"
 	"github.com/engigu/baihu-panel/internal/models"
 )
 
@@ -35,6 +36,7 @@ type EnvVO struct {
 	Name      string           `json:"name"`
 	Value     string           `json:"value"`
 	Remark    string           `json:"remark"`
+	Type      string           `json:"type"`
 	Hidden    bool             `json:"hidden"`
 	Enabled   bool             `json:"enabled"`
 	CreatedAt models.LocalTime `json:"created_at"`
@@ -46,11 +48,16 @@ func ToEnvVO(env *models.EnvironmentVariable) *EnvVO {
 	if env == nil {
 		return nil
 	}
+	val := string(env.Value)
+	if env.Type == constant.EnvTypeSecret {
+		val = "********"
+	}
 	return &EnvVO{
 		ID:        env.ID,
 		Name:      env.Name,
-		Value:     string(env.Value),
+		Value:     val,
 		Remark:    env.Remark,
+		Type:      env.Type,
 		Hidden:    env.Hidden,
 		Enabled:   env.Enabled,
 		CreatedAt: env.CreatedAt,

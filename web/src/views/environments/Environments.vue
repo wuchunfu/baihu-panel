@@ -7,12 +7,13 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import Pagination from '@/components/Pagination.vue'
-import { Plus, Pencil, Trash2, Eye, EyeOff, Search, AlertTriangle, Terminal, Zap, ZapOff } from 'lucide-vue-next'
+import { Plus, Pencil, Trash2, Eye, EyeOff, Search, AlertTriangle, Terminal, Zap, ZapOff, Shield } from 'lucide-vue-next'
 import TextOverflow from '@/components/TextOverflow.vue'
 import { api, type EnvVar } from '@/api'
 import { toast } from 'vue-sonner'
 import { useSiteSettings } from '@/composables/useSiteSettings'
 import { Switch } from '@/components/ui/switch'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 const { pageSize } = useSiteSettings()
 
@@ -34,11 +35,24 @@ let textareaResizeObserver: ResizeObserver | null = null
 const filterName = ref('')
 const currentPage = ref(1)
 const total = ref(0)
+const activeTab = ref('normal')
+const isSecretSet = ref(true)
 let searchTimer: ReturnType<typeof setTimeout> | null = null
+
+async function checkSecretStatus() {
+  try {
+    isSecretSet.value = await api.env.secretStatus()
+    if (!isSecretSet.value) {
+      toast.warning('未检测到加密机密秘钥，请在启动时配置 BAIHU_SECRET_KEY 环境变量')
+    }
+  } catch (error) {
+    console.error('检查秘钥状态失败', error)
+  }
+}
 
 async function loadEnvVars() {
   try {
-    const res = await api.env.list({ page: currentPage.value, page_size: pageSize.value, name: filterName.value || undefined })
+    const res = await api.env.list({ page: currentPage.value, page_size: pageSize.value, name: filterName.value || undefined, type: activeTab.value })
     envVars.value = res.data
     total.value = res.total
     // 初始化显示状态，根据数据库的 hidden 状态同步显示
@@ -60,20 +74,25 @@ function handleSearch() {
   }, 300)
 }
 
+watch(activeTab, () => {
+  currentPage.value = 1
+  loadEnvVars()
+})
+
 function handlePageChange(page: number) {
   currentPage.value = page
   loadEnvVars()
 }
 
 function openCreate() {
-  editingEnv.value = { name: '', value: '', remark: '', hidden: true, enabled: true }
+  editingEnv.value = { name: '', value: '', remark: '', type: activeTab.value, hidden: true, enabled: true }
   isEdit.value = false
   showDialog.value = true
   void updateVisualLineNumbers()
 }
 
 function openEdit(env: EnvVar) {
-  editingEnv.value = { ...env }
+  editingEnv.value = { ...env, value: env.type === 'secret' ? '' : env.value }
   isEdit.value = true
   showDialog.value = true
   void updateVisualLineNumbers()
@@ -120,10 +139,10 @@ async function saveEnv() {
   try {
     if (isEdit.value && editingEnv.value.id) {
       await api.env.update(editingEnv.value.id, editingEnv.value)
-      toast.success('变量已更新')
+      toast.success(editingEnv.value.type === 'secret' ? '机密已更新' : '变量已更新')
     } else {
       await api.env.create(editingEnv.value)
-      toast.success('变量已创建')
+      toast.success(editingEnv.value.type === 'secret' ? '机密已创建' : '变量已创建')
     }
     showDialog.value = false
     loadEnvVars()
@@ -137,7 +156,7 @@ async function confirmDelete(id: string) {
     associatedTasks.value = res || []
     showDeleteDialog.value = true
   } catch {
-    toast.error('检查变量引用失败')
+    toast.error('检查机密引用失败')
   }
 }
 
@@ -156,7 +175,7 @@ async function deleteEnv(force = false) {
       isDeleting.value = false
       return
     }
-    toast.success('变量已删除')
+    toast.success(activeTab.value === 'secret' ? '机密已删除' : '变量已删除')
     loadEnvVars()
     showDeleteDialog.value = false
   } catch {
@@ -210,7 +229,10 @@ function maskValue(value: string) {
   return '•'.repeat(Math.min(value.length, 20))
 }
 
-onMounted(loadEnvVars)
+onMounted(() => {
+  checkSecretStatus()
+  loadEnvVars()
+})
 
 onBeforeUnmount(() => {
   textareaResizeObserver?.disconnect()
@@ -219,46 +241,69 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="space-y-6">
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
       <div>
         <h2 class="text-xl sm:text-2xl font-bold tracking-tight">环境变量</h2>
         <p class="text-muted-foreground text-sm">管理脚本执行时的环境变量</p>
       </div>
-      <div class="flex items-center gap-2">
-        <div class="relative flex-1 sm:flex-none">
-          <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input v-model="filterName" placeholder="搜索变量..." class="h-9 pl-9 w-full sm:w-56 text-sm"
-            @input="handleSearch" />
+      <div class="flex flex-col sm:flex-row items-center gap-2">
+        <div class="flex w-full sm:w-auto items-center gap-2">
+          <div class="relative flex-1 sm:flex-none">
+            <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input v-model="filterName" placeholder="搜索名称..." class="h-9 pl-9 w-full sm:w-48 text-sm"
+              @input="handleSearch" />
+          </div>
+          <Button @click="openCreate" class="shrink-0 h-9" :disabled="activeTab === 'secret' && !isSecretSet">
+            <Plus class="h-4 w-4 sm:mr-2" /> <span class="hidden sm:inline">新建{{ activeTab === 'secret' ? '机密' : '变量' }}</span>
+          </Button>
         </div>
-        <Button @click="openCreate" class="shrink-0">
-          <Plus class="h-4 w-4 sm:mr-2" /> <span class="hidden sm:inline">新建变量</span>
-        </Button>
+        <Tabs v-model="activeTab" class="w-full sm:w-auto shrink-0">
+          <TabsList class="grid w-full grid-cols-2 sm:w-[200px] h-9">
+            <TabsTrigger value="normal" class="text-sm">
+              <span>环境变量</span>
+            </TabsTrigger>
+            <TabsTrigger value="secret" class="text-sm">
+              <Shield class="w-3.5 h-3.5 mr-1" />
+              <span>机密</span>
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
     </div>
 
-    <div class="rounded-lg border bg-card overflow-x-auto">
+    <div v-if="activeTab === 'secret' && !isSecretSet" class="flex flex-col items-center justify-center p-12 text-center rounded-lg border bg-card border-dashed">
+      <div class="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+        <AlertTriangle class="h-6 w-6 text-destructive" />
+      </div>
+      <h3 class="text-lg font-bold mb-2">服务未配置加密秘钥</h3>
+      <p class="text-sm text-muted-foreground max-w-md">
+        必须在程序启动时通过环境变量 <code class="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">BAIHU_SECRET_KEY</code> 配置秘钥，才能启用机密管理功能。秘钥将仅存在于内存中，为您提供强安全的数据落盘加密保护。
+      </p>
+    </div>
+
+    <div v-else class="rounded-lg border bg-card overflow-x-auto mt-4">
       <!-- 表头 -->
       <div
         class="flex items-center gap-4 px-4 py-2 border-b bg-muted/20 text-sm text-muted-foreground font-medium min-w-[500px]">
-        <span class="w-32 sm:w-48 shrink-0">变量名</span>
+        <span class="w-32 sm:w-48 shrink-0">名称</span>
         <span class="w-24 sm:flex-1 shrink-0 sm:shrink">值</span>
-        <span class="w-32 sm:w-48 shrink-0 hidden md:block">备注</span>
+        <span class="w-32 sm:w-48 shrink-0 hidden md:block">备注说明</span>
         <span class="w-28 sm:w-36 shrink-0 text-center">操作</span>
       </div>
       <!-- 列表 -->
       <div class="divide-y min-w-[500px]">
         <div v-if="envVars.length === 0" class="text-sm text-muted-foreground text-center py-8">
-          暂无环境变量
+          {{ activeTab === 'secret' ? '暂无机密' : '暂无环境变量' }}
         </div>
         <div v-for="env in envVars" :key="env.id"
           class="flex items-center gap-4 px-4 py-2 hover:bg-muted/30 transition-colors">
           <code
             class="w-32 sm:w-48 font-medium truncate shrink-0 text-xs bg-muted/40 px-2 py-1 rounded">{{ env.name }}</code>
           <span class="w-24 sm:flex-1 shrink-0 sm:shrink font-mono text-muted-foreground truncate text-xs">
-            <TextOverflow :text="showValues[env.id] ? env.value : maskValue(env.value)" title="变量值" />
+            <TextOverflow :text="showValues[env.id] ? env.value : maskValue(env.value)" title="查看值" />
           </span>
           <span class="w-32 sm:w-48 shrink-0 text-muted-foreground truncate text-sm hidden md:block">
-            <TextOverflow :text="env.remark || '-'" title="备注" />
+            <TextOverflow :text="env.remark || '-'" title="备注描述" />
           </span>
           <span class="w-28 sm:w-36 shrink-0 flex justify-center gap-1">
             <Button variant="ghost" size="icon" class="h-7 w-7 rounded-md transition-all"
@@ -289,16 +334,23 @@ onBeforeUnmount(() => {
     <Dialog v-model:open="showDialog">
       <DialogContent class="w-[calc(100vw-2rem)] max-w-md min-w-0">
         <DialogHeader>
-          <DialogTitle>{{ isEdit ? '编辑变量' : '新建变量' }}</DialogTitle>
-          <DialogDescription class="sr-only">编辑环境变量的名称、值、备注以及启用和隐藏状态。</DialogDescription>
+          <DialogTitle>{{ isEdit ? (editingEnv.type === 'secret' ? '更新机密' : '编辑变量') : (editingEnv.type === 'secret' ? '新建机密' : '新建变量') }}</DialogTitle>
+          <div v-if="editingEnv.type === 'secret'" class="flex items-center gap-2.5 p-3 mt-3 rounded-xl bg-amber-500/5 border border-amber-500/10 text-amber-600 dark:text-amber-400 text-xs leading-relaxed">
+            <Shield class="h-4 w-4 shrink-0 text-amber-500" />
+            <p>机密会在保存后得到<b class="text-amber-700 dark:text-amber-300">强加密保护</b>，且<b class="text-amber-700 dark:text-amber-300">仅在计划任务定时执行时才会被注入环境</b>。终端命令、调试运行、测试运行均无法获取机密内容。在执行日志内，机密文本会被自动打码。</p>
+          </div>
+          <DialogDescription v-else class="sr-only">编辑变量的名称、值、备注以及启用和隐藏状态。</DialogDescription>
         </DialogHeader>
         <div class="space-y-4 py-2 min-w-0">
           <div class="space-y-2 min-w-0">
-            <Label>变量名</Label>
-            <Input v-model="editingEnv.name" class="w-full min-w-0 font-mono" placeholder="MY_VAR" />
+            <Label>{{ editingEnv.type === 'secret' ? '机密名称' : '变量名' }}</Label>
+            <Input v-model="editingEnv.name" class="w-full min-w-0" :placeholder="editingEnv.type === 'secret' ? '例如：GITHUB_TOKEN' : 'MY_VAR'" />
           </div>
           <div class="space-y-2 min-w-0">
-            <Label>变量值</Label>
+            <Label>
+              {{ editingEnv.type === 'secret' ? '机密内容' : '变量值' }}
+              <span v-if="editingEnv.type === 'secret' && isEdit" class="text-muted-foreground ml-1 font-normal text-xs">(输入新值即可覆盖)</span>
+            </Label>
             <div class="relative flex min-w-0 overflow-hidden rounded-md border border-input bg-transparent shadow-xs focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px]">
               <div ref="lineNumbersRef" class="flex max-h-40 w-6 shrink-0 flex-col overflow-hidden border-r border-border bg-muted/30 py-2 text-right font-mono text-[10px] leading-6 text-muted-foreground">
                 <span v-for="(line, index) in visualLineNumbers" :key="`${index}-${line}`" class="block h-6 px-1">{{ line }}</span>
@@ -307,8 +359,8 @@ onBeforeUnmount(() => {
                 ref="valueTextareaRef"
                 v-model="editingEnv.value"
                 rows="5"
-                placeholder="value"
-                class="max-h-40 min-h-16 w-full min-w-0 resize-none overflow-x-hidden bg-transparent pl-2 pr-3 py-2 font-mono text-sm leading-6 break-all whitespace-pre-wrap outline-none"
+                :placeholder="editingEnv.type === 'secret' && isEdit ? '' : (editingEnv.type === 'secret' ? '输入机密内容...' : '输入变量内容...')"
+                class="max-h-40 min-h-16 w-full min-w-0 resize-none overflow-x-hidden bg-transparent pl-2 pr-3 py-2 font-mono placeholder:font-sans text-sm leading-6 break-all whitespace-pre-wrap outline-none"
                 @scroll="syncValueLineNumbers"
               />
               <div aria-hidden="true" class="pointer-events-none absolute bottom-1.5 right-1.5 h-3.5 w-3.5 opacity-45">
@@ -325,14 +377,14 @@ onBeforeUnmount(() => {
           </div>
           <div class="space-y-2 min-w-0">
             <Label>备注</Label>
-            <Textarea v-model="editingEnv.remark" class="w-full min-w-0 resize-none break-all" rows="3" placeholder="变量说明..." />
+            <Textarea v-model="editingEnv.remark" class="w-full min-w-0 resize-none break-all text-sm placeholder:font-sans" rows="3" :placeholder="editingEnv.type === 'secret' ? '机密用途说明...' : '变量用途说明...'" />
           </div>
-          <div class="flex items-center justify-between space-x-2 pt-2">
+          <div class="flex items-center justify-between space-x-2 pt-2" v-if="editingEnv.type !== 'secret'">
             <Label class="text-sm font-medium">隐藏变量值</Label>
             <Switch v-model="editingEnv.hidden" />
           </div>
-          <div class="flex items-center justify-between space-x-2">
-            <Label class="text-sm font-medium">启用变量</Label>
+          <div class="flex items-center justify-between space-x-2 pt-2">
+            <Label class="text-sm font-medium">{{ editingEnv.type === 'secret' ? '启用机密' : '启用变量' }}</Label>
             <Switch v-model="editingEnv.enabled" />
           </div>
         </div>
@@ -352,9 +404,9 @@ onBeforeUnmount(() => {
               <div class="flex items-start gap-3 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
                 <AlertTriangle class="h-5 w-5 text-destructive shrink-0 mt-0.5" />
                 <div class="space-y-1">
-                  <p class="text-sm font-bold text-destructive">环境变量正在使用中</p>
+                  <p class="text-sm font-bold text-destructive">{{ activeTab === 'secret' ? '机密' : '环境变量' }}正在使用中</p>
                   <p class="text-xs text-muted-foreground leading-relaxed">
-                    该变量已被以下任务引用，直接删除可能导致任务运行失败。建议先移除引用或选择“强制删除”。
+                    该{{ activeTab === 'secret' ? '机密' : '变量' }}已被以下任务引用，直接删除可能导致任务运行失败。建议先移除引用或选择“强制删除”。
                   </p>
                 </div>
               </div>
@@ -379,11 +431,11 @@ onBeforeUnmount(() => {
 
               <div class="p-3 rounded-lg bg-secondary/30 border border-border/20">
                 <p class="text-xs text-muted-foreground leading-relaxed">
-                  <span class="font-bold text-foreground/80">提示：</span>选择强制删除将自动解除以上任务对该变量的绑定并执行物理删除。
+                  <span class="font-bold text-foreground/80">提示：</span>选择强制删除将自动解除以上任务对该{{ activeTab === 'secret' ? '机密' : '变量' }}的绑定并执行物理删除。
                 </p>
               </div>
             </div>
-            <p v-else class="py-2">确定要删除此环境变量吗？此操作无法撤销，请谨慎操作。</p>
+            <p v-else class="py-2">确定要删除此{{ activeTab === 'secret' ? '机密' : '环境变量' }}吗？此操作无法撤销，请谨慎操作。</p>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
