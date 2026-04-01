@@ -590,7 +590,6 @@ watch(() => route.query, (newQuery) => {
                   <div class="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
                 </div>
                 <span class="text-sm text-muted-foreground font-medium animate-pulse">正在获取日志内容</span>
-                <p class="text-[10px] text-muted-foreground/50 mt-1.5 uppercase tracking-wider">Establishing connection...</p>
               </div>
             </template>
             <template v-else-if="!decompressedOutput.trim()">
