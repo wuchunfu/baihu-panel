@@ -179,9 +179,9 @@ onMounted(loadLogs)
                         <span :class="['h-1.5 w-1.5 rounded-full shrink-0', log.status === 'success' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.3)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.3)]']"></span>
                         <span class="font-medium truncate text-sm">{{ log.username }}</span>
                     </div>
-                    <div class="w-32 shrink-0">
-                        <code class="text-[11px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded truncate cursor-pointer hover:bg-muted/80 transition-colors inline-block tabular-nums"
-                            @click="showIpInfo(log.ip)">{{ log.ip }}</code>
+                    <div class="w-32 shrink-0 overflow-hidden">
+                        <code class="block w-full text-[11px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded truncate cursor-pointer hover:bg-muted/80 transition-colors tabular-nums"
+                            @click="showIpInfo(log.ip)" :title="log.ip">{{ log.ip }}</code>
                     </div>
                     <span class="flex-1 min-w-0 text-xs text-muted-foreground line-clamp-1">
                         {{ log.user_agent || '-' }}
@@ -199,10 +199,9 @@ onMounted(loadLogs)
                         <span :class="['h-2 w-2 rounded-full shrink-0', log.status === 'success' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.3)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.3)]']"></span>
                         <span class="truncate">{{ log.username }}</span>
                     </div>
-                    <div class="w-40 shrink-0">
-                        <code
-                            class="text-xs text-muted-foreground bg-muted px-2 py-1 rounded truncate cursor-pointer hover:bg-muted/80 transition-colors inline-block tabular-nums"
-                            @click="showIpInfo(log.ip)">{{ log.ip }}</code>
+                    <div class="w-40 shrink-0 overflow-hidden">
+                        <code class="block w-full text-xs text-muted-foreground bg-muted px-2 py-1 rounded truncate cursor-pointer hover:bg-muted/80 transition-colors tabular-nums"
+                            @click="showIpInfo(log.ip)" :title="log.ip">{{ log.ip }}</code>
                     </div>
                     <span class="flex-1 min-w-0 text-xs text-muted-foreground truncate">
                         <TextOverflow :text="log.user_agent || '-'" title="User Agent" />

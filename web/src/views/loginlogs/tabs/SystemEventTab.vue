@@ -227,7 +227,7 @@ function onDialogClose(open: boolean) {
 
             <!-- ========== 2. 中屏表头 (Medium 640px - 1024px) ========== -->
             <div class="hidden sm:flex lg:hidden items-center gap-4 px-4 py-2 border-b bg-muted/20 text-sm text-muted-foreground font-medium">
-                <span class="w-48 shrink-0">事件信息</span>
+                <span class="w-60 shrink-0">事件信息</span>
                 <span class="flex-1 min-w-0">详情内容</span>
                 <span class="w-40 shrink-0 text-right">发生时间</span>
             </div>
@@ -265,7 +265,7 @@ function onDialogClose(open: boolean) {
                 <div v-for="log in logs" :key="`medium-${log.id}`"
                     class="hidden sm:flex lg:hidden items-center gap-4 px-4 py-2.5 hover:bg-muted/50 transition-colors cursor-pointer group"
                     :class="[selectedLogId === log.id && 'bg-accent/50']" @click="showDetail(log)">
-                    <div class="w-48 shrink-0 flex items-center gap-3 min-w-0 font-medium text-sm">
+                    <div class="w-60 shrink-0 flex items-center gap-3 min-w-0 font-medium text-sm">
                         <component :is="getLevelIcon(log.level)" :class="['h-3.5 w-3.5 shrink-0 opacity-80',
                             log.level === LOG_LEVEL.INFO ? 'text-blue-500' :
                                 log.level === LOG_LEVEL.WARNING ? 'text-yellow-500' : 'text-red-500']" />

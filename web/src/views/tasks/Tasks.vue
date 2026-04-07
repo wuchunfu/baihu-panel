@@ -325,23 +325,23 @@ watch(() => route.query.agent_id, (newVal: any) => {
 
 <template>
   <div class="space-y-6">
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
       <div class="flex flex-col shrink-0">
         <h2 class="text-xl sm:text-2xl font-bold tracking-tight">定时任务</h2>
         <p class="text-muted-foreground text-sm">管理和调度自动化执行任务</p>
       </div>
 
-      <div class="flex flex-col sm:flex-row gap-3 w-full sm:flex-1 sm:justify-end">
+      <div class="flex flex-col sm:flex-row flex-wrap gap-3 w-full lg:flex-1 lg:justify-end">
         <!-- 搜索与标签 -->
-        <div class="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
-          <div class="relative w-full sm:w-36 md:w-40 lg:w-48 group">
+        <div class="flex flex-col sm:flex-row items-center gap-2 w-full sm:flex-1 sm:w-auto text-sm">
+          <div class="relative w-full sm:flex-1 lg:max-w-[240px] group">
             <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-            <Input v-model="filterName" placeholder="搜索任务..." class="h-9 pl-9 w-full text-sm bg-muted/20 border-muted-foreground/10 focus:bg-background"
+            <Input v-model="filterName" placeholder="搜索任务..." class="h-9 pl-9 w-full bg-muted/20 border-muted-foreground/10 focus:bg-background"
               @input="handleSearch" />
           </div>
-          <div class="relative w-full sm:w-32 md:w-36 lg:w-40 group">
+          <div class="relative w-full sm:flex-1 lg:max-w-[180px] group">
             <Tag class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-            <Input v-model="filterTags" placeholder="搜索标签..." class="h-9 pl-9 w-full text-sm bg-muted/20 border-muted-foreground/10 focus:bg-background"
+            <Input v-model="filterTags" placeholder="搜索标签..." class="h-9 pl-9 w-full bg-muted/20 border-muted-foreground/10 focus:bg-background"
               @input="handleSearch" />
           </div>
         </div>
