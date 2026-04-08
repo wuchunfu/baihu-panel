@@ -7,13 +7,12 @@ import { Input } from '@/components/ui/input'
 import Pagination from '@/components/Pagination.vue'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import LogViewer from './LogViewer.vue'
-import Ansi from 'ansi-to-vue3'
 import {
-  RefreshCw, X, Search, Maximize2, GitBranch, Terminal,
-  CheckCircle2, XCircle, AlertCircle, Ban, Clock, Zap as ZapIcon, Check, Trash2
+  RefreshCw, X, Search, GitBranch, Terminal,
+  AlertCircle, Ban, Clock, Zap as ZapIcon, Check, Trash2
 } from 'lucide-vue-next'
 import { api, type TaskLog } from '@/api'
-import { Badge } from '@/components/ui/badge'
+import LogDetailCard from '@/components/LogDetailCard.vue'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -282,24 +281,7 @@ async function handleDeleteLog() {
   }
 }
 
-function getStatusBadgeClass(status: string) {
-  switch (status) {
-    case TASK_STATUS.SUCCESS:
-      return 'bg-green-500/10 text-green-600 border-green-500/20 dark:bg-green-500/20 dark:text-green-400 dark:border-green-500/30 shadow-[0_0_8px_-2px_rgba(34,197,94,0.15)]'
-    case TASK_STATUS.FAILED:
-      return 'bg-red-500/10 text-red-600 border-red-500/20 dark:bg-red-500/20 dark:text-red-400 dark:border-red-500/30'
-    case TASK_STATUS.RUNNING:
-      return 'bg-blue-500/10 text-blue-600 border-blue-500/20 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30'
-    case TASK_STATUS.PENDING:
-      return 'bg-amber-500/10 text-amber-600 border-amber-500/20 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30'
-    case TASK_STATUS.TIMEOUT:
-      return 'bg-orange-500/10 text-orange-600 border-orange-500/20 dark:bg-orange-500/20 dark:text-orange-400 dark:border-orange-500/30'
-    case TASK_STATUS.CANCELLED:
-      return 'bg-muted/50 text-muted-foreground border-muted-foreground/10'
-    default:
-      return 'bg-secondary text-secondary-foreground border-transparent'
-  }
-}
+
 
 function getTaskTypeTitle(type: string) {
   return type === TASK_TYPE.REPO ? '仓库同步' : '普通任务'
@@ -505,115 +487,23 @@ watch(() => route.query, (newQuery) => {
       <!-- 日志详情侧边栏 -->
       <div v-if="selectedLog"
         class="w-full lg:w-[480px] rounded-lg border bg-card flex flex-col overflow-hidden shrink-0">
-        <div class="flex items-center justify-between px-4 h-11 border-b bg-muted/20">
-          <div class="flex items-center gap-2">
-            <span class="text-sm font-normal text-muted-foreground">日志详情</span>
-            <Button v-if="selectedLog.status === TASK_STATUS.RUNNING" variant="destructive" size="sm"
-              class="h-6 px-2 text-[10px]" :disabled="isStopping" @click="stopTask">
-              {{ isStopping ? '停止中...' : '停止任务' }}
-            </Button>
-          </div>
-          <div class="flex items-center gap-1">
-            <Button variant="ghost" size="icon" class="h-7 w-7 text-muted-foreground hover:text-destructive"
-              title="删除该日志" @click="confirmDeleteLog(selectedLog.id)">
-              <Trash2 class="h-3.5 w-3.5" />
-            </Button>
-            <Button variant="ghost" size="icon" class="h-7 w-7" @click="closeDetail" title="关闭">
-              <X class="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        </div>
-        <div class="px-4 py-3 border-b space-y-2 text-sm text-foreground/80">
-          <div class="flex justify-between items-center h-6">
-            <span class="text-sm font-normal text-muted-foreground">任务名称</span>
-            <span class="text-sm font-normal text-muted-foreground">{{ selectedLog.task_name }}</span>
-          </div>
-          <div class="flex justify-between items-center h-8">
-            <span class="text-sm font-normal text-muted-foreground">状态</span>
-            <Badge variant="outline" :class="[
-              'capitalize px-3 py-1 font-normal rounded-full border shadow-sm transition-all duration-300 ring-4 ring-transparent hover:ring-primary/5',
-              getStatusBadgeClass(selectedLog.status)
-            ]">
-              <div class="flex items-center gap-1.5">
-                <CheckCircle2 v-if="selectedLog.status === TASK_STATUS.SUCCESS" class="h-3.5 w-3.5 fill-green-500/20" />
-                <XCircle v-else-if="selectedLog.status === TASK_STATUS.FAILED" class="h-3.5 w-3.5 fill-red-500/20" />
-                <ZapIcon v-else-if="selectedLog.status === TASK_STATUS.RUNNING"
-                  class="h-3.5 w-3.5 fill-current animate-pulse text-blue-500" />
-                <Clock v-else-if="selectedLog.status === TASK_STATUS.PENDING" class="h-3.5 w-3.5 fill-amber-500/20" />
-                <AlertCircle v-else-if="selectedLog.status === TASK_STATUS.TIMEOUT" class="h-3.5 w-3.5 fill-orange-500/20" />
-                <Ban v-else-if="selectedLog.status === TASK_STATUS.CANCELLED" class="h-3.5 w-3.5" />
-                <span class="text-[10px] font-normal uppercase">{{ selectedLog.status === TASK_STATUS.SUCCESS ? 'SUCCESS' : selectedLog.status }}</span>
-              </div>
-            </Badge>
-          </div>
-          <div class="flex justify-between items-center h-6">
-            <span class="text-sm font-normal text-muted-foreground">耗时</span>
-            <span class="text-sm font-normal text-muted-foreground">{{ formatDuration(selectedLog.duration) }}</span>
-          </div>
-          <div class="flex justify-between items-center h-6">
-            <span class="text-sm font-normal text-muted-foreground">开始时间</span>
-            <span class="text-sm font-normal text-muted-foreground">{{ selectedLog.start_time || '-' }}</span>
-          </div>
-          <div class="flex justify-between items-center h-6">
-            <span class="text-sm font-normal text-muted-foreground">结束时间</span>
-            <span class="text-sm font-normal text-muted-foreground">{{ selectedLog.end_time || '-' }}</span>
-          </div>
-          <div class="pt-1.5">
-            <span class="text-sm font-normal text-muted-foreground block mb-1">执行命令</span>
-            <code
-              class="block font-mono bg-muted/40 px-3 py-2 rounded text-xs break-all border border-muted-foreground/10">
-              {{ selectedLog.command }}
-            </code>
-          </div>
-        </div>
-        <div class="flex-1 flex flex-col overflow-hidden">
-          <div v-if="selectedLog.error" class="px-4 py-3 border-b bg-red-500/5 space-y-2 text-sm">
-            <div class="flex items-center gap-2 text-red-500 font-medium">
-              <X class="h-4 w-4" />
-              <span class="font-normal">系统错误</span>
-            </div>
-            <code class="block font-mono bg-red-500/10 text-red-600 px-2 py-1 rounded text-xs break-all">
-              {{ selectedLog.error }}
-            </code>
-          </div>
-          <div class="px-4 py-2.5 text-sm text-muted-foreground border-b bg-muted/20 flex items-center justify-between">
-            <span class="text-sm font-normal text-muted-foreground">日志输出</span>
-            <Button variant="ghost" size="icon" class="h-6 w-6" @click="showFullscreen = true" title="全屏查看">
-              <Maximize2 class="h-3.5 w-3.5" />
-            </Button>
-          </div>
-          <div class="flex-1 overflow-auto bg-black/5 dark:bg-white/5 min-h-[240px] flex flex-col">
-            <template v-if="isWsLoading">
-              <div class="flex-1 flex flex-col items-center justify-center p-8 select-none">
-                <div class="relative w-12 h-12 mb-4">
-                  <div class="absolute inset-0 rounded-full border-2 border-primary/10"></div>
-                  <div class="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
-                </div>
-                <span class="text-sm text-muted-foreground font-medium animate-pulse">正在获取日志内容</span>
-              </div>
-            </template>
-            <template v-else-if="!decompressedOutput.trim()">
-              <div class="flex-1 flex flex-col items-center justify-center p-8 select-none">
-                <div class="w-12 h-12 rounded-2xl bg-muted/30 flex items-center justify-center mb-4 border border-muted-foreground/5">
-                  <AlertCircle class="h-6 w-6 text-muted-foreground/40" />
-                </div>
-                <span class="text-sm text-muted-foreground font-medium">无输出内容</span>
-                <p class="text-[11px] text-muted-foreground/50 mt-1">此任务执行期间未产生标准输出日志</p>
-              </div>
-            </template>
-            <template v-else>
-              <div class="p-4 text-xs font-mono whitespace-pre-wrap break-all log-pre leading-relaxed">
-                <Ansi>{{ decompressedOutput }}</Ansi>
-              </div>
-            </template>
-          </div>
-        </div>
+        <LogDetailCard 
+          :log="selectedLog" 
+          :content="decompressedOutput" 
+          :loading="isWsLoading" 
+          :is-stopping="isStopping"
+          @close="closeDetail"
+          @stop="stopTask"
+          @delete="confirmDeleteLog"
+          @maximize="showFullscreen = true"
+        />
       </div>
     </div>
 
     <!-- 全屏查看日志 -->
-    <LogViewer v-model:open="showFullscreen" :title="`日志输出 - ${selectedLog?.task_name || ''}`"
-      :content="decompressedOutput" :status="selectedLog?.status" />
+    <LogViewer v-model:open="showFullscreen"
+      :log="selectedLog"
+      :content="decompressedOutput" />
 
     <!-- 清空日志确认弹窗 -->
     <AlertDialog :open="showClearDialog" @update:open="showClearDialog = $event">

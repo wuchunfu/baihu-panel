@@ -10,13 +10,13 @@ import LogViewer from '@/views/history/LogViewer.vue'
 import { Plus, Play, Pencil, Trash2, Search, ScrollText, GitBranch, Terminal, Server, Monitor, X, Loader2, RefreshCw, Wifi, WifiOff, Zap, ZapOff, Copy, Tag } from 'lucide-vue-next'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { api, type Agent, type Task } from '@/api'
+import { api, type Agent, type Task, type TaskLog } from '@/api'
 import { toast } from 'vue-sonner'
 import { useSiteSettings } from '@/composables/useSiteSettings'
 import { useRouter, useRoute } from 'vue-router'
 import { TASK_TYPE, AGENT_STATUS, TRIGGER_TYPE, TASK_STATUS } from '@/constants'
 import TextOverflow from '@/components/TextOverflow.vue'
-import { format } from 'date-fns'
+
 
 const router = useRouter()
 const route = useRoute()
@@ -220,9 +220,7 @@ async function toggleTask(task: Task, enabled: boolean) {
 }
 
 const showLogViewer = ref(false)
-const selectedLogId = ref<string | undefined>()
-const latestLogStatus = ref('')
-const latestLogTitle = ref('')
+const selectedLog = ref<TaskLog | null>(null)
 const logContent = ref('')
 let logSocket: WebSocket | null = null
 
@@ -251,7 +249,7 @@ onUnmounted(() => {
 import { decompressFromBase64 } from '@/utils/decompress'
 
 const displayLogContent = computed(() => {
-  if (!logContent.value) return '无输出'
+  if (!logContent.value) return ''
   return decompressFromBase64(logContent.value)
 })
 
@@ -261,10 +259,7 @@ async function viewLogs(taskId: string) {
     if (res.data && res.data.length > 0) {
       const latestLog = res.data[0]
       if (!latestLog) return
-      const timeStr = latestLog.created_at ? format(new Date(latestLog.created_at), 'yyyy/MM/dd HH:mm:ss') : ''
-      latestLogTitle.value = `${latestLog.task_name || ''}${timeStr ? ` (${timeStr})` : ''}`
-      latestLogStatus.value = latestLog.status || ''
-      selectedLogId.value = latestLog.id
+      selectedLog.value = latestLog
       logContent.value = ''
       showLogViewer.value = true
 
@@ -554,14 +549,20 @@ watch(() => route.query.agent_id, (newVal: any) => {
               <span class="flex-1 text-[11px] truncate">{{ task.remark }}</span>
             </div>
           </div>
-          <div class="flex items-center justify-end gap-0.5 pt-2 border-t border-border/40">
-            <Button variant="ghost" class="h-7 px-1.5 text-[10px] gap-1" @click="runTask(task.id)" :disabled="executingTaskId === task.id">
-              <Loader2 v-if="executingTaskId === task.id" class="h-3 w-3 animate-spin" />
-              <Play v-else class="h-3 w-3" />执行
+          <div class="grid grid-cols-4 items-center pt-2 mt-2 border-t border-border/40 -mx-1">
+            <Button variant="ghost" class="h-9 px-0 text-xs gap-1.5 hover:bg-primary/5 rounded-none" @click="runTask(task.id)" :disabled="executingTaskId === task.id">
+              <Loader2 v-if="executingTaskId === task.id" class="h-3.5 w-3.5 animate-spin" />
+              <Play v-else class="h-3.5 w-3.5" />执行
             </Button>
-            <Button variant="ghost" class="h-7 px-1.5 text-[10px] gap-1" @click="viewLogs(task.id)"><ScrollText class="h-3 w-3" />日志</Button>
-            <Button variant="ghost" class="h-7 px-1.5 text-[10px] gap-1" @click="openEdit(task)"><Pencil class="h-3 w-3" />编辑</Button>
-            <Button variant="ghost" class="h-7 px-1.5 text-[10px] gap-1 text-destructive" @click="confirmDelete(task.id)"><Trash2 class="h-3 w-3" />删除</Button>
+            <Button variant="ghost" class="h-9 px-0 text-xs gap-1.5 hover:bg-primary/5 rounded-none border-l border-border/10" @click="viewLogs(task.id)">
+              <ScrollText class="h-3.5 w-3.5" />日志
+            </Button>
+            <Button variant="ghost" class="h-9 px-0 text-xs gap-1.5 hover:bg-primary/5 rounded-none border-l border-border/10" @click="openEdit(task)">
+              <Pencil class="h-3.5 w-3.5" />编辑
+            </Button>
+            <Button variant="ghost" class="h-9 px-0 text-xs gap-1.5 hover:bg-destructive/5 text-destructive rounded-none border-l border-border/10" @click="confirmDelete(task.id)">
+              <Trash2 class="h-3.5 w-3.5" />删除
+            </Button>
           </div>
         </div>
       </div>
@@ -576,9 +577,11 @@ watch(() => route.query.agent_id, (newVal: any) => {
     <!-- 仓库同步弹窗 -->
     <RepoDialog v-model:open="showRepoDialog" :task="editingTask" :is-edit="isEdit" @saved="loadTasks" />
 
-    <!-- 最新日志全屏查看 -->
-    <LogViewer v-model:open="showLogViewer" :title="`最新日志 - ${latestLogTitle}`"
-      :content="displayLogContent || '无输出'" :status="latestLogStatus" />
+    <LogViewer v-model:open="showLogViewer"
+      title="最新日志"
+      variant="full"
+      :log="selectedLog"
+      :content="displayLogContent" />
 
     <!-- 删除确认 (批量) -->
     <AlertDialog v-model:open="showBatchDeleteDialog">
