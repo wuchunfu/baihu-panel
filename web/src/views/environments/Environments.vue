@@ -252,7 +252,7 @@ onBeforeUnmount(() => {
         <h2 class="text-xl sm:text-2xl font-bold tracking-tight">环境变量</h2>
         <p class="text-muted-foreground text-sm">管理脚本执行时的环境变量</p>
       </div>
-      <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+      <div class="flex flex-col sm:flex-row items-center sm:justify-end gap-3 w-full md:w-auto">
         <div class="flex w-full sm:w-auto items-center gap-2">
           <div class="relative flex-1 sm:flex-none">
             <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
