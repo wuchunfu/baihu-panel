@@ -51,11 +51,15 @@ const channelConfigFields: Record<string, { key: string; label: string; required
   Bark: [
     { key: 'server', label: '服务地址', required: false, placeholder: '默认 https://api.day.app' },
     { key: 'push_key', label: 'Push Key', required: true, placeholder: 'Bark Push Key' },
+    { key: 'proxy_url', label: '代理地址', required: false, placeholder: 'http/https/socks5 代理' },
     { key: 'sound', label: '推送声音', required: false, placeholder: '留空使用默认' },
+    { key: 'badge', label: '角标数量', required: false, placeholder: '例如 1' },
     { key: 'group', label: '推送分组', required: false },
     { key: 'icon', label: '推送图标', required: false, placeholder: '图标 URL' },
     { key: 'level', label: '时效性', required: false, placeholder: 'active / timeSensitive / passive' },
     { key: 'url', label: '跳转URL', required: false },
+    { key: 'copy', label: '复制内容', required: false, placeholder: '收到推送时自动复制的内容' },
+    { key: 'auto_copy', label: '自动复制', required: false, placeholder: '1 表示开启' },
   ],
   Dtalk: [
     { key: 'access_token', label: 'Access Token', required: true, placeholder: '钉钉机器人 access_token' },

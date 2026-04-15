@@ -24,7 +24,11 @@ func (c *BarkChannel) Send(config ChannelConfig, msg *Message) (*Result, error) 
 		URL:     config.GetString("url"),
 		Key:     config.GetString("key"),
 		IV:      config.GetString("iv"),
-		Server:  config.GetString("server"),
+		Server:   config.GetString("server"),
+		Badge:    config.GetString("badge"),
+		Copy:     config.GetString("copy"),
+		AutoCopy: config.GetString("auto_copy"),
+		ProxyURL: config.GetString("proxy_url"),
 	}
 
 	res, err := cli.Request(msg.Title, msg.Text)
