@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import Pagination from '@/components/Pagination.vue'
-import { RefreshCw, Search, Loader2 } from 'lucide-vue-next'
+import { Loader2 } from 'lucide-vue-next'
 import TextOverflow from '@/components/TextOverflow.vue'
 import { api } from '@/api'
 import { toast } from 'vue-sonner'

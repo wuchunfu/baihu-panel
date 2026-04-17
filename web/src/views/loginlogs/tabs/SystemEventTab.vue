@@ -2,22 +2,14 @@
 import { ref, onMounted, computed } from 'vue'
 import { api, type AppLog, LOG_CATEGORY, LOG_LEVEL } from '@/api'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select'
+    Info, AlertTriangle, AlertCircle
+} from 'lucide-vue-next'
+import { Badge } from '@/components/ui/badge'
 import Pagination from '@/components/Pagination.vue'
 import BaihuDialog from '@/components/ui/BaihuDialog.vue'
 import { toast } from 'vue-sonner'
 import { format } from 'date-fns'
-import {
-    RefreshCw, Search, Info, AlertTriangle, AlertCircle
-} from 'lucide-vue-next'
 import { useSiteSettings } from '@/composables/useSiteSettings'
 
 const props = defineProps<{

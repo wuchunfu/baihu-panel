@@ -1,16 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { api, type AppLog, LOG_CATEGORY, LOG_STATUS } from '@/api'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import Pagination from '@/components/Pagination.vue'
 import {
   Dialog,
@@ -21,7 +12,7 @@ import {
 import { toast } from 'vue-sonner'
 import { format } from 'date-fns'
 import {
-  RefreshCw, Trash2, Check, X, Search
+  Check, X
 } from 'lucide-vue-next'
 import {
   AlertDialog,
