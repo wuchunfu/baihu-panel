@@ -20,6 +20,13 @@ import {
 } from 'lucide-vue-next'
 import { useSiteSettings } from '@/composables/useSiteSettings'
 
+const props = defineProps<{
+    filters: {
+        level: string
+        keyword: string
+    }
+}>()
+
 const { pageSize } = useSiteSettings()
 
 const logs = ref<AppLog[]>([])
@@ -27,14 +34,7 @@ const selectedLogId = ref<string | null>(null)
 const total = ref(0)
 const loading = ref(false)
 const showClearConfirm = ref(false)
-
-const filters = ref({
-    level: 'all',
-    keyword: '',
-    page: 1
-})
-
-let searchTimer: ReturnType<typeof setTimeout> | null = null
+const currentPage = ref(1)
 
 const detailDialogProps = ref({
     open: false,
@@ -48,9 +48,9 @@ async function fetchLogs() {
     try {
         const res = await api.appLogs.list({
             category: LOG_CATEGORY.SYSTEM_NOTICE,
-            level: filters.value.level === 'all' ? undefined : filters.value.level,
-            keyword: filters.value.keyword || undefined,
-            page: filters.value.page,
+            level: props.filters.level === 'all' ? undefined : props.filters.level,
+            keyword: props.filters.keyword || undefined,
+            page: currentPage.value,
             page_size: pageSize.value
         })
         logs.value = res.data || []
@@ -62,23 +62,8 @@ async function fetchLogs() {
     }
 }
 
-function handleSearch() {
-    if (searchTimer) clearTimeout(searchTimer)
-    searchTimer = setTimeout(() => {
-        filters.value.page = 1
-        fetchLogs()
-    }, 300)
-}
-
-function handlePageChange(page: number) {
-    filters.value.page = page
-    fetchLogs()
-}
-
-function handleLevelChange(val: any) {
-    if (val === null || val === undefined) return
-    filters.value.level = String(val)
-    filters.value.page = 1
+function handlePageChange(index: number) {
+    currentPage.value = index
     fetchLogs()
 }
 
@@ -96,11 +81,12 @@ async function handleClear() {
     try {
         await api.appLogs.clear(LOG_CATEGORY.SYSTEM_NOTICE)
         toast.success('清空成功')
-        filters.value.page = 1
+        currentPage.value = 1
         fetchLogs()
     } catch (e: any) {
         toast.error('清空失败: ' + (e.message || ''))
     }
+    showClearConfirm.value = false
 }
 
 onMounted(() => {
@@ -108,6 +94,11 @@ onMounted(() => {
 })
 
 const selectedLog = computed(() => logs.value.find((l: AppLog) => l.id === selectedLogId.value))
+
+defineExpose({
+    fetchLogs,
+    showClearConfirm
+})
 
 function getLevelBadgeClass(level: string) {
     switch (level) {
@@ -153,41 +144,15 @@ function onDialogClose(open: boolean) {
 
 <template>
     <div class="space-y-4">
-        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full">
-            <div class="flex items-center gap-2 w-full lg:w-auto lg:ml-auto">
-                <div class="relative w-full sm:w-60 group">
-                    <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                    <Input v-model="filters.keyword" placeholder="搜索标题或内容..." class="h-9 pl-9 w-full text-sm bg-muted/20 border-muted-foreground/10 focus:bg-background"
-                        @input="handleSearch" />
-                </div>
-                <div class="relative flex-1 sm:flex-none sm:w-28">
-                    <Select :model-value="filters.level" @update:model-value="handleLevelChange">
-                        <SelectTrigger class="h-9 w-full text-sm bg-muted/20 border-muted-foreground/10">
-                            <SelectValue placeholder="级别" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">所有级别</SelectItem>
-                            <SelectItem :value="LOG_LEVEL.INFO">信息</SelectItem>
-                            <SelectItem :value="LOG_LEVEL.WARNING">警告</SelectItem>
-                            <SelectItem :value="LOG_LEVEL.ERROR">错误</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-                <Button variant="outline" size="icon" class="h-9 w-9 shrink-0 sm:flex" @click="fetchLogs" :disabled="loading"
-                    title="刷新">
-                    <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': loading }" />
-                </Button>
+        <BaihuDialog v-model:open="showClearConfirm" title="清空系统事件确认">
+            <div class="text-sm text-muted-foreground leading-relaxed">
+                此操作将永久清空当前分类下的所有系统事件记录，操作后无法恢复。确认要继续吗？
             </div>
-            <BaihuDialog v-model:open="showClearConfirm" title="清空系统事件确认">
-                <div class="text-sm text-muted-foreground leading-relaxed">
-                    此操作将永久清空当前分类下的所有系统事件记录，操作后无法恢复。确认要继续吗？
-                </div>
-                <template #footer>
-                    <Button variant="ghost" @click="showClearConfirm = false">取消</Button>
-                    <Button variant="destructive" class="shadow-lg shadow-destructive/20" @click="handleClear">确认清空</Button>
-                </template>
-            </BaihuDialog>
-        </div>
+            <template #footer>
+                <Button variant="ghost" @click="showClearConfirm = false">取消</Button>
+                <Button variant="destructive" class="shadow-lg shadow-destructive/20" @click="handleClear">确认清空</Button>
+            </template>
+        </BaihuDialog>
 
         <div class="rounded-lg border bg-card overflow-hidden">
             <!-- ========== 1. 大屏表头 (Large >= 1024px) ========== -->
@@ -217,7 +182,7 @@ function onDialogClose(open: boolean) {
                     :class="[selectedLogId === log.id && 'bg-accent/50']" @click="showDetail(log)">
                     <div class="flex items-start justify-between mb-3 border-b border-border/40 pb-2">
                         <div class="flex items-center gap-2 flex-1 min-w-0 mr-2">
-                            <span class="text-xs text-muted-foreground shrink-0 tabular-nums">#{{ total - (filters.page - 1) * pageSize - index }}</span>
+                            <span class="text-xs text-muted-foreground shrink-0 tabular-nums">#{{ total - (currentPage - 1) * pageSize - index }}</span>
                             <span class="font-bold text-sm truncate" :title="log.title">{{ log.title }}</span>
                         </div>
                         <span :class="['h-2 w-2 mt-1.5 rounded-full shrink-0 shadow-[0_0_8px]',
@@ -269,7 +234,7 @@ function onDialogClose(open: boolean) {
                 <div v-for="(log, index) in logs" :key="`large-${log.id}`"
                     class="hidden lg:flex items-center gap-4 px-4 py-2 hover:bg-muted/50 transition-colors cursor-pointer group"
                     :class="[selectedLogId === log.id && 'bg-accent/50']" @click="showDetail(log)">
-                    <span class="w-16 shrink-0 text-muted-foreground text-[13px] tabular-nums pl-1">#{{ total - (filters.page - 1) * pageSize - index }}</span>
+                    <span class="w-16 shrink-0 text-muted-foreground text-[13px] tabular-nums pl-1">#{{ total - (currentPage - 1) * pageSize - index }}</span>
                     <div class="w-56 shrink-0 flex items-center gap-3 min-w-0 text-[13px]">
                         <component :is="getLevelIcon(log.level)" :class="['h-4 w-4 shrink-0 opacity-80',
                             log.level === LOG_LEVEL.INFO ? 'text-blue-500' :
@@ -286,7 +251,7 @@ function onDialogClose(open: boolean) {
                 </div>
             </div>
 
-            <Pagination :total="total" :page="filters.page" @update:page="handlePageChange" />
+            <Pagination :total="total" :page="currentPage" @update:page="handlePageChange" />
         </div>
 
         <BaihuDialog v-model:open="detailDialogProps.open" :title="detailDialogProps.title" @update:open="onDialogClose">

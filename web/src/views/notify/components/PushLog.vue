@@ -35,6 +35,12 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useSiteSettings } from '@/composables/useSiteSettings'
 
+const props = defineProps<{
+  filters: {
+    status: string
+    keyword: string
+  }
+}>()
 
 const { pageSize } = useSiteSettings()
 
@@ -43,15 +49,7 @@ const selectedLogId = ref<string | null>(null)
 const total = ref(0)
 const loading = ref(false)
 const showClearConfirm = ref(false)
-
-const filters = ref({
-  status: 'all',
-  keyword: '',
-  page: 1
-})
-
-let searchTimer: ReturnType<typeof setTimeout> | null = null
-
+const currentPage = ref(1)
 
 const detailDialogProps = ref({
   open: false,
@@ -65,9 +63,9 @@ async function fetchLogs() {
   try {
     const res = await api.appLogs.list({
       category: LOG_CATEGORY.PUSH_LOG,
-      status: filters.value.status === 'all' ? undefined : filters.value.status,
-      keyword: filters.value.keyword || undefined,
-      page: filters.value.page,
+      status: props.filters.status === 'all' ? undefined : props.filters.status,
+      keyword: props.filters.keyword || undefined,
+      page: currentPage.value,
       page_size: pageSize.value
     })
     logs.value = res.data || []
@@ -79,23 +77,8 @@ async function fetchLogs() {
   }
 }
 
-function handleSearch() {
-  if (searchTimer) clearTimeout(searchTimer)
-  searchTimer = setTimeout(() => {
-    filters.value.page = 1
-    fetchLogs()
-  }, 300)
-}
-
-function handlePageChange(page: number) {
-  filters.value.page = page
-  fetchLogs()
-}
-
-function handleStatusChange(val: any) {
-  if (val === null || val === undefined) return
-  filters.value.status = String(val)
-  filters.value.page = 1
+function handlePageChange(index: number) {
+  currentPage.value = index
   fetchLogs()
 }
 
@@ -113,11 +96,12 @@ async function handleClear() {
   try {
     await api.appLogs.clear(LOG_CATEGORY.PUSH_LOG)
     toast.success('清空成功')
-    filters.value.page = 1
+    currentPage.value = 1
     fetchLogs()
   } catch (e: any) {
     toast.error('清空失败: ' + (e.message || ''))
   }
+  showClearConfirm.value = false
 }
 
 onMounted(() => {
@@ -125,6 +109,11 @@ onMounted(() => {
 })
 
 const selectedLog = computed(() => logs.value.find((l: AppLog) => l.id === selectedLogId.value))
+
+defineExpose({
+  fetchLogs,
+  showClearConfirm
+})
 
 function getStatusBadgeClass(status: string) {
   switch (status) {
@@ -138,7 +127,7 @@ function getStatusBadgeClass(status: string) {
 }
 
 function getLogIndex(index: number) {
-  return total.value - (filters.value.page - 1) * pageSize.value - index
+  return total.value - (currentPage.value - 1) * pageSize.value - index
 }
 
 function formatDate(dateStr: string) {
@@ -165,52 +154,22 @@ function onDialogClose(open: boolean) {
 
 <template>
   <div class="space-y-6">
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full">
-      <div class="flex items-center gap-2 w-full lg:w-auto lg:ml-auto">
-        <div class="relative w-full sm:w-60 group">
-          <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-          <Input v-model="filters.keyword" placeholder="搜索标题或内容..." class="h-9 pl-9 w-full text-sm bg-muted/20 border-muted-foreground/10 focus:bg-background"
-            @input="handleSearch" />
-        </div>
-        <div class="relative flex-1 sm:flex-none sm:w-28">
-          <Select :model-value="filters.status" @update:model-value="handleStatusChange">
-            <SelectTrigger class="h-9 w-full text-sm bg-muted/20 border-muted-foreground/10">
-              <SelectValue placeholder="状态" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">所有状态</SelectItem>
-              <SelectItem :value="LOG_STATUS.SUCCESS">发送成功</SelectItem>
-              <SelectItem :value="LOG_STATUS.FAILED">发送失败</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <Button variant="outline" size="icon" class="h-9 w-9 shrink-0 sm:flex" @click="fetchLogs" :disabled="loading"
-          title="刷新">
-          <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': loading }" />
-        </Button>
-      </div>
-      <AlertDialog :open="showClearConfirm" @update:open="showClearConfirm = $event">
-        <Button variant="outline"
-          class="h-9 px-4 shrink-0 text-sm text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 w-full sm:w-auto"
-          @click="showClearConfirm = true">
-          <Trash2 class="h-4 w-4 mr-2" /> <span>清空记录</span>
-        </Button>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>确认清空所有推送日志？</AlertDialogTitle>
-            <AlertDialogDescription>
-              此操作将永久清空当前分类下的所有消息推送历史记录，操作后无法恢复。确认要继续吗？
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction @click="handleClear" variant="destructive">
-              确认清空
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+    <AlertDialog :open="showClearConfirm" @update:open="showClearConfirm = $event">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>确认清空所有推送日志？</AlertDialogTitle>
+          <AlertDialogDescription>
+            此操作将永久清空当前分类下的所有消息推送历史记录，操作后无法恢复。确认要继续吗？
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>取消</AlertDialogCancel>
+          <AlertDialogAction @click="handleClear" variant="destructive">
+            确认清空
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
 
     <div class="rounded-lg border bg-card overflow-hidden">
       <!-- ========== 1. 大屏表头 (Large >= 1024px) ========== -->
@@ -306,7 +265,7 @@ function onDialogClose(open: boolean) {
       </div>
 
       <!-- 分页 -->
-      <Pagination :total="total" :page="filters.page" @update:page="handlePageChange" />
+      <Pagination :total="total" :page="currentPage" @update:page="handlePageChange" />
     </div>
 
     <Dialog v-model:open="detailDialogProps.open" @update:open="onDialogClose">

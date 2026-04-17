@@ -10,6 +10,10 @@ import { toast } from 'vue-sonner'
 import { useSiteSettings } from '@/composables/useSiteSettings'
 import BaihuDialog from '@/components/ui/BaihuDialog.vue'
 
+const props = defineProps<{
+    username: string
+}>()
+
 const { pageSize } = useSiteSettings()
 
 interface LoginLog {
@@ -38,11 +42,9 @@ interface IpGeoInfo {
 }
 
 const logs = ref<LoginLog[]>([])
-const filterUsername = ref('')
 const currentPage = ref(1)
 const total = ref(0)
 const loading = ref(false)
-let searchTimer: ReturnType<typeof setTimeout> | null = null
 
 // IP 地理位置弹窗
 const ipDialogOpen = ref(false)
@@ -73,7 +75,7 @@ async function loadLogs() {
         const res = await api.settings.getLoginLogs({
             page: currentPage.value,
             page_size: pageSize.value,
-            username: filterUsername.value || undefined
+            username: props.username || undefined
         })
         logs.value = res.data
         total.value = res.total
@@ -84,37 +86,20 @@ async function loadLogs() {
     }
 }
 
-function handleSearch() {
-    if (searchTimer) clearTimeout(searchTimer)
-    searchTimer = setTimeout(() => {
-        currentPage.value = 1
-        loadLogs()
-    }, 300)
-}
-
 function handlePageChange(page: number) {
     currentPage.value = page
     loadLogs()
 }
 
 onMounted(loadLogs)
+
+defineExpose({
+    loadLogs
+})
 </script>
 
 <template>
     <div class="space-y-4">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
-            <div class="flex items-center gap-2 w-full lg:w-auto lg:ml-auto">
-                <div class="relative w-full sm:w-60 group">
-                    <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                    <Input v-model="filterUsername" placeholder="搜索用户名..." class="h-9 pl-9 w-full text-sm bg-muted/20 border-muted-foreground/10 focus:bg-background"
-                        @input="handleSearch" />
-                </div>
-                <Button variant="outline" size="icon" class="h-9 w-9 shrink-0" @click="loadLogs" :disabled="loading"
-                    title="刷新">
-                    <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': loading }" />
-                </Button>
-            </div>
-        </div>
 
         <div class="rounded-lg border bg-card overflow-hidden">
             <!-- ========== 1. 大屏表头 (Large >= 1024px) ========== -->
