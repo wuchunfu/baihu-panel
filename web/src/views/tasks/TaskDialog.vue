@@ -489,28 +489,35 @@ async function save() {
                     </div>
                   </div>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
-                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-bold">执行位置</Label>
-                  <div class="sm:col-span-3">
-                    <Select v-model="selectedAgentId">
-                      <SelectTrigger class="h-9 bg-muted/20 border-muted-foreground/15"><SelectValue placeholder="选择执行节点" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="local" class="flex items-center gap-2"><div class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-blue-500" /><span>本地执行 (Local)</span></div></SelectItem>
-                        <SelectItem v-for="agent in onlineAgents" :key="agent.id" :value="String(agent.id)"><div class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full" :class="agent.status === 'online' ? 'bg-green-500' : 'bg-muted-foreground'" /><span>{{ agent.name }}</span></div></SelectItem>
-                      </SelectContent>
-                    </Select>
+                <!-- 执行位置与触发方式 (大屏保持原样，小屏并排展示优化) -->
+                <div class="grid grid-cols-2 sm:grid-cols-1 gap-2.5 sm:gap-5">
+                  <div class="grid sm:grid-cols-4 items-center gap-1 sm:gap-3 min-w-0">
+                    <Label class="sm:text-right text-[11px] sm:text-xs text-foreground/70 uppercase tracking-wider font-semibold truncate">执行位置</Label>
+                    <div class="sm:col-span-3 min-w-0">
+                      <Select v-model="selectedAgentId">
+                        <SelectTrigger class="h-9 bg-muted/20 border-muted-foreground/15 px-2 sm:px-3 text-[11px] sm:text-sm min-w-0">
+                          <SelectValue placeholder="选择..." class="truncate" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="local" class="text-xs sm:text-sm"><div class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-blue-500" /><span>本地执行</span></div></SelectItem>
+                          <SelectItem v-for="agent in onlineAgents" :key="agent.id" :value="String(agent.id)" class="text-xs sm:text-sm"><div class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full" :class="agent.status === 'online' ? 'bg-green-500' : 'bg-muted-foreground'" /><span>{{ agent.name }}</span></div></SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
-                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-bold">触发方式</Label>
-                  <div class="sm:col-span-3">
-                    <Select v-model="selectedTriggerType">
-                      <SelectTrigger class="h-9 bg-muted/20 border-muted-foreground/15"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem :value="TRIGGER_TYPE.CRON">⏳ 定时周期触发</SelectItem>
-                        <SelectItem :value="TRIGGER_TYPE.BAIHU_STARTUP">🚀 系统启动触发</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div class="grid sm:grid-cols-4 items-center gap-1 sm:gap-3 min-w-0">
+                    <Label class="sm:text-right text-[11px] sm:text-xs text-foreground/70 uppercase tracking-wider font-semibold truncate">触发方式</Label>
+                    <div class="sm:col-span-3 min-w-0">
+                      <Select v-model="selectedTriggerType">
+                        <SelectTrigger class="h-9 bg-muted/20 border-muted-foreground/15 px-2 sm:px-3 text-[11px] sm:text-sm min-w-0">
+                          <SelectValue class="truncate" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem :value="TRIGGER_TYPE.CRON" class="text-xs sm:text-sm">⏳ 定时周期</SelectItem>
+                          <SelectItem :value="TRIGGER_TYPE.BAIHU_STARTUP" class="text-xs sm:text-sm">🚀 系统启动</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
               </div>
