@@ -44,11 +44,38 @@ const compressionPlugin = () => ({
   }
 } as const)
 
+// Release optimization plugin to offload fonts to CDN
+const releaseOptimizePlugin = (isOptimize: boolean) => ({
+  name: 'release-optimize-plugin',
+  transformIndexHtml(html: string) {
+    if (isOptimize) {
+      return html.replace(
+        '</head>',
+        `  <link rel="preconnect" href="https://fonts.geekzu.org">\n  <link rel="stylesheet" href="https://fonts.geekzu.org/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Noto+Sans+SC:wght@100..900&display=swap">\n  </head>`
+      )
+    }
+    return html
+  },
+  transform(code: string, id: string) {
+    if (isOptimize && id.includes('index.css')) {
+      return {
+        code: code
+          .replace(/@import\s+["']@fontsource-variable\/inter\/index\.css["'];/g, '/* Removed for CDN */')
+          .replace(/@import\s+["']@fontsource-variable\/noto-sans-sc\/index\.css["'];/g, '/* Removed for CDN */')
+          .replace(/@import\s+["']@fontsource-variable\/jetbrains-mono\/index\.css["'];/g, '/* Removed for CDN */'),
+        map: null
+      }
+    }
+  }
+})
+
+const isOptimize = process.env.VITE_RELEASE_OPTIMIZE === 'true'
+
 export default defineConfig({
   plugins: [
     vue(),
     tailwindcss(),
-    viteStaticCopy({
+    !isOptimize && viteStaticCopy({
       targets: [
         {
           src: 'node_modules/monaco-editor/min/vs',
@@ -56,6 +83,7 @@ export default defineConfig({
         }
       ]
     }),
+    releaseOptimizePlugin(isOptimize),
     compressionPlugin(),
     VitePWA({
       registerType: 'autoUpdate',
@@ -147,5 +175,6 @@ export default defineConfig({
     }
   },
   define: {
+    __MONACO_CDN__: isOptimize ? JSON.stringify('https://registry.npmmirror.com/monaco-editor/0.52.0/files/min/vs') : 'null'
   }
 })

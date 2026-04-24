@@ -28,7 +28,16 @@ build:
 	CGO_ENABLED=0 $(GOBUILD) $(LDFLAGS) -o $(BINARY) main.go
 
 # Build release version (Frontend + Backend with embedded assets)
-release: build-web
+release:
+	cd web && npm ci && npm run build
+	@mkdir -p bin
+	rm -rf internal/static/dist
+	cp -r web/dist internal/static/dist
+	CGO_ENABLED=0 $(GOBUILD) $(LDFLAGS) $(TAGS_WEB) -o $(BINARY) main.go
+
+# Build release version (Frontend + Backend with embedded assets)
+release-binary:
+	cd web && npm ci && VITE_RELEASE_OPTIMIZE=true npm run build
 	@mkdir -p bin
 	rm -rf internal/static/dist
 	cp -r web/dist internal/static/dist
