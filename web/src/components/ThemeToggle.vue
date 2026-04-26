@@ -21,7 +21,7 @@ const { theme, setTheme } = useTheme()
         <Monitor v-else class="h-4 w-4" />
       </Button>
     </DropdownMenuTrigger>
-    <DropdownMenuContent align="end">
+    <DropdownMenuContent align="end" class="min-w-[90px]">
       <DropdownMenuItem @click="setTheme('light')" class="gap-2">
         <Sun class="h-4 w-4" />
         <span>浅色</span>
