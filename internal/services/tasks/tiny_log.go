@@ -98,10 +98,15 @@ func (l *TinyLog) Write(p []byte) (n int, err error) {
 	}
 
 	originalInputLen := len(p)
-	payload := p
+	var payload []byte
 	if len(l.remainder) > 0 {
-		payload = append(l.remainder, p...)
+		// 为了防止 p 和 l.remainder 底层数组有重叠或不可预期的修改，这里分配新内存
+		payload = make([]byte, len(l.remainder)+len(p))
+		copy(payload, l.remainder)
+		copy(payload[len(l.remainder):], p)
 		l.remainder = nil
+	} else {
+		payload = p
 	}
 
 	// 1. 寻找最后一个换行符 (\n 或 \r)
@@ -129,14 +134,20 @@ func (l *TinyLog) Write(p []byte) (n int, err error) {
 			completeBytes = payload[:lastSafe]
 			remainder = payload[lastSafe:]
 		} else {
-			// 保留当前所有内容到下一轮
-			l.remainder = payload
+			// 保留当前所有内容到下一轮 (必须 copy，因为 payload 底层可能是 io.Copy 的复用 buf)
+			l.remainder = make([]byte, len(payload))
+			copy(l.remainder, payload)
 			return originalInputLen, nil
 		}
 	}
 
-	// 4. 将剩余部分保存
-	l.remainder = remainder
+	// 4. 将剩余部分保存 (必须 copy，防止后续 Read 覆盖底层数组)
+	if len(remainder) > 0 {
+		l.remainder = make([]byte, len(remainder))
+		copy(l.remainder, remainder)
+	} else {
+		l.remainder = nil
+	}
 
 	// 5. 将完整行转换为 UTF-8 并脱敏
 	text := utils.MaskSecrets(utils.ToUTF8(completeBytes), l.masks)
