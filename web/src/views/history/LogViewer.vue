@@ -18,6 +18,7 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
+  'stop': []
 }>()
 
 const isFullscreen = ref(false)
@@ -74,6 +75,7 @@ onUnmounted(() => {
           :empty-description="emptyDescription"
           @close="close"
           @maximize="isFullscreen = !isFullscreen"
+          @stop="$emit('stop')"
         />
       </div>
     </div>

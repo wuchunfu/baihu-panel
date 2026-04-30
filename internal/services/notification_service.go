@@ -414,13 +414,14 @@ func (s *NotificationService) handleEvent(bindingType string) eventbus.Handler {
 			tmplTextKey = constant.KeyNotifyTemplatePasswordChangedText
 
 		case constant.EventTaskSuccess, constant.EventTaskFailed, constant.EventTaskTimeout:
-			if e.Type == constant.EventTaskSuccess {
+			switch e.Type {
+			case constant.EventTaskSuccess:
 				tmplTitleKey = constant.KeyNotifyTemplateTaskSuccessTitle
 				tmplTextKey = constant.KeyNotifyTemplateTaskSuccessText
-			} else if e.Type == constant.EventTaskFailed {
+			case constant.EventTaskFailed:
 				tmplTitleKey = constant.KeyNotifyTemplateTaskFailedTitle
 				tmplTextKey = constant.KeyNotifyTemplateTaskFailedText
-			} else {
+			case constant.EventTaskTimeout:
 				tmplTitleKey = constant.KeyNotifyTemplateTaskTimeoutTitle
 				tmplTextKey = constant.KeyNotifyTemplateTaskTimeoutText
 			}

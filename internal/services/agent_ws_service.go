@@ -194,6 +194,14 @@ func (m *AgentWSManager) GetConnection(agentID string) *AgentConnection {
 	return m.connections[agentID]
 }
 
+// IsAgentOnline 检查指定 Agent 是否在线
+func (m *AgentWSManager) IsAgentOnline(agentID string) bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	_, exists := m.connections[agentID]
+	return exists
+}
+
 // SendToAgent 发送消息给指定 Agent
 func (m *AgentWSManager) SendToAgent(agentID string, msgType string, data interface{}) error {
 	conn := m.GetConnection(agentID)

@@ -387,12 +387,16 @@ export interface RepoConfig {
 }
 
 export interface ExecutionResult {
-  TaskID: string
-  Success: boolean
-  Output: string
-  Error: string
-  Start: string
-  End: string
+  task_id: string
+  log_id?: string
+  success: boolean
+  status?: string
+  output?: string
+  error?: string
+  duration?: number
+  exit_code?: number
+  start_time?: string
+  end_time?: string
 }
 
 export interface TaskListResponse {

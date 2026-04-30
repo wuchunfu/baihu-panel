@@ -205,20 +205,38 @@ async function deleteTask() {
 }
 
 const executingTaskId = ref<string | null>(null)
+const isStopping = ref(false)
 
 async function runTask(id: string) {
+  if (executingTaskId.value) return
   executingTaskId.value = id
-  toast.message('正在执行...', { id: 'executing' })
   try {
     const res = await api.tasks.execute(id)
-    if (res.Success === false) {
-      throw new Error(res.Error || '执行失败')
+    toast.success('执行指令已发送')
+    if (res.log_id) {
+      // 开启日志查看器
+      viewLogs(id)
     }
-    toast.success('触发成功', { id: 'executing' })
   } catch (error: any) {
-    toast.error(error?.message || '执行失败', { id: 'executing' })
+    toast.error(error.message || '执行失败')
   } finally {
     executingTaskId.value = null
+  }
+}
+
+async function handleStopTask() {
+  if (!selectedLog.value || isStopping.value) return
+  
+  isStopping.value = true
+  try {
+    await api.tasks.stop(selectedLog.value.id)
+    toast.success('停止指令已发送')
+  } catch (error: any) {
+    toast.error(error.message || '停止失败')
+    // 出错时也尝试刷新，因为后端可能已经自动修正了“僵尸”状态
+    loadTasks()
+  } finally {
+    isStopping.value = false
   }
 }
 
@@ -830,8 +848,10 @@ watch(() => route.query.agent_id, (newVal: any) => {
       variant="full"
       :log="selectedLog"
       :content="displayLogContent"
+      :is-stopping="isStopping"
       :empty-title="logEmptyTitle"
-      :empty-description="logEmptyDesc" />
+      :empty-description="logEmptyDesc"
+      @stop="handleStopTask" />
 
 
     <!-- 删除确认 (批量) -->

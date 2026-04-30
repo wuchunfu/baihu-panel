@@ -27,6 +27,7 @@ type AgentWSManager interface {
 	RegisterRemoteWaiter(logID string) chan *models.AgentTaskResult
 	UnregisterRemoteWaiter(logID string)
 	SendToAgent(agentID string, msgType string, data interface{}) error
+	IsAgentOnline(agentID string) bool
 }
 
 // SettingsService 接口定义（避免循环依赖）
@@ -633,33 +634,66 @@ func (es *ExecutorService) StopTaskExecution(logID string) error {
 	var taskLog models.TaskLog
 	res := database.DB.Where("id = ?", logID).Limit(1).Find(&taskLog)
 	if res.Error != nil || res.RowsAffected == 0 {
-		return fmt.Errorf("日志不存在")
+		return fmt.Errorf("停止失败：找不到指定的执行记录 (LogID: %s)", logID)
 	}
 
+	// 1. 状态预校验
 	if taskLog.Status != constant.TaskStatusRunning {
-		return fmt.Errorf("任务已结束")
+		statusText := "已结束"
+		switch taskLog.Status {
+		case constant.TaskStatusSuccess:
+			statusText = "执行成功"
+		case constant.TaskStatusFailed:
+			statusText = "执行失败"
+		case constant.TaskStatusTimeout:
+			statusText = "执行超时"
+		case constant.TaskStatusCancelled:
+			statusText = "已取消"
+		}
+		return fmt.Errorf("操作无效：任务当前状态为 [%s]，无需停止", statusText)
 	}
 
 	task := es.taskService.GetTaskByID(taskLog.TaskID)
 	if task == nil {
-		return fmt.Errorf("任务不存在")
+		return fmt.Errorf("停止失败：关联的任务信息已丢失")
 	}
 
-	// 远程任务：发送停止指令到 Agent
+	// 2. 远程任务逻辑
 	if task.AgentID != nil && *task.AgentID != "" {
+		// 校验 Agent 是否在线
+		if !es.agentWSManager.IsAgentOnline(*task.AgentID) {
+			return fmt.Errorf("停止失败：目标 Agent (%s) 当前离线，无法下发指令", *task.AgentID)
+		}
+
 		logger.Infof("[Executor] 请求停止远程任务 #%s (Agent #%s, LogID: %s)", task.ID, *task.AgentID, logID)
-		return es.agentWSManager.SendToAgent(*task.AgentID, constant.WSTypeStop, map[string]interface{}{
+		err := es.agentWSManager.SendToAgent(*task.AgentID, constant.WSTypeStop, map[string]interface{}{
 			"log_id": logID,
 		})
+		if err != nil {
+			return fmt.Errorf("下发停止指令失败: %v", err)
+		}
+		return nil
 	}
 
-	// 本地任务：直接停止调度器中的执行实例
+	// 3. 本地任务逻辑
 	logger.Infof("[Executor] 请求停止本地任务 #%s (LogID: %s)", task.ID, logID)
 	if es.scheduler.StopLog(logID) {
 		return nil
 	}
 
-	return fmt.Errorf("任务当前不在运行队列中或已完成")
+	// 4. 容错处理：如果调度器中没有句柄，但数据库状态还是 running
+	// 这通常发生在程序异常重启后，需要手动清理掉这个“僵尸状态”
+	taskLog.Status = constant.TaskStatusFailed
+	errorMessage := "任务执行实例已丢失（可能由于系统重启导致），已自动同步状态为失败"
+	taskLog.Error = models.BigText(errorMessage)
+	
+	// 更新数据库状态
+	database.DB.Model(&taskLog).Updates(map[string]interface{}{
+		"status": taskLog.Status,
+		"error":  taskLog.Error,
+	})
+
+	return fmt.Errorf("停止失败：%s", errorMessage)
 }
 
 // GetRunningCount 获取正在运行任务数量
